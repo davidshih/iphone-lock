@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brick 改善計畫</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --card: #1a1a1a;
+    --border: #2c2c2c;
+    --text: #f2f2f2;
+    --muted: #9a9a9a;
+    --accent: #ffffff;
+    --done: #34c759;
+    --p1: #ff453a;
+    --p2: #ff9f0a;
+    --p3: #64d2ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+    line-height: 1.65;
+    padding: 48px 20px 80px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 48px; }
+  header .brick {
+    display: inline-block; width: 56px; height: 56px; border-radius: 14px;
+    background: var(--accent); color: #000; font-size: 30px; line-height: 56px;
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 32px; letter-spacing: 1px; }
+  header p { color: var(--muted); margin-top: 8px; }
+  h2 {
+    font-size: 20px; margin: 44px 0 16px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; margin-bottom: 12px;
+  }
+  .card h3 { font-size: 16px; margin-bottom: 6px; }
+  .card p { color: var(--muted); font-size: 14px; }
+  .card code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12.5px; background: #000; padding: 1px 6px; border-radius: 4px;
+    color: #d0d0d0;
+  }
+  .tag {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .5px;
+    padding: 2px 8px; border-radius: 99px; margin-right: 8px; vertical-align: 2px;
+  }
+  .tag.done { background: rgba(52,199,89,.15); color: var(--done); }
+  .tag.p1 { background: rgba(255,69,58,.15); color: var(--p1); }
+  .tag.p2 { background: rgba(255,159,10,.15); color: var(--p2); }
+  .tag.p3 { background: rgba(100,210,255,.15); color: var(--p3); }
+  .done-card { border-color: rgba(52,199,89,.35); }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; letter-spacing: .5px; }
+  .mock {
+    display: flex; gap: 20px; flex-wrap: wrap; margin-top: 16px;
+  }
+  .phone {
+    flex: 1; min-width: 240px; max-width: 280px; border: 1px solid var(--border);
+    border-radius: 28px; padding: 22px 16px; background: #111;
+  }
+  .phone.locked { background: #000; border-color: #333; }
+  .phone .label {
+    text-align: center; font-size: 11px; letter-spacing: 1.5px; color: var(--muted);
+    margin-bottom: 14px; text-transform: uppercase;
+  }
+  .phone .big { text-align: center; font-size: 44px; margin: 18px 0 6px; }
+  .phone .title { text-align: center; font-size: 17px; font-weight: 700; }
+  .phone .sub { text-align: center; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .phone .btn {
+    margin-top: 18px; text-align: center; padding: 12px; border-radius: 10px;
+    font-size: 14px; font-weight: 700;
+  }
+  .btn.dark { background: var(--accent); color: #000; }
+  .btn.ghost { border: 1px solid var(--border); color: var(--muted); font-weight: 400; font-size: 12px; }
+  .countdown { text-align: center; font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 10px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 56px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brick">🧱</div>
+  <h1>Brick 改善計畫</h1>
+  <p>目標：對齊 getbrick.com 的核心體驗——不碰實體 NFC key，就是解不開。</p>
+  <p class="meta">2026-07-09 · 基於 main branch code review</p>
+</header>
+
+<h2>✅ 本輪已完成</h2>
+
+<div class="card done-card">
+  <h3><span class="tag done">DONE</span>1. 移除 Release 版手動解鎖後門</h3>
+  <p>首頁 <code>Manual Stop</code> 與 Settings 的 <code>End Block Now</code> 改為 <code>#if DEBUG</code> 限定。
+  正式版唯二解鎖路徑：掃已配對 NFC key（含 5 秒冷靜倒數確認）、或消耗一次 Emergency Unbrick。</p>
+  <p class="meta">ContentView.swift · Release build 驗證通過</p>
+</div>
+
+<div class="card done-card">
+  <h3><span class="tag done">DONE</span>2. Blocking 中禁止配對新卡</h3>
+  <p>原本 block 進行中掃任意陌生卡就能配對、再掃一次即可解鎖，等於免費後門。
+  現在 blocking 期間掃到未配對的卡直接拒絕，不進入配對流程。</p>
+  <p class="meta">BlockSessionModel.handleKeyScan · 新增單元測試 testUnknownKeyDuringBlockIsRejectedWithoutPairing</p>
+</div>
+
+<div class="card done-card">
+  <h3><span class="tag done">DONE</span>3. 拒絕無 identifier 的 NFC tag</h3>
+  <p>空 identifier bytes 全部 hash 成同一個 fingerprint，任兩個回空 ID 的裝置可互相解鎖（YubiKey over ISO 7816 常見）。
+  現在掃描階段直接拒收並顯示錯誤，不允許配對。</p>
+  <p class="meta">NFCFingerprint.scannedKey 改回傳 Optional，掃描器對 nil 直接 invalidate</p>
+</div>
+
+<h2>🗺️ 功能 Roadmap</h2>
+
+<div class="card">
+  <h3><span class="tag p1">P1</span>無限期模式（Brick 的靈魂）</h3>
+  <p>getbrick 的主模式是「鎖到你回去碰那塊磚為止」，目前只有 15 分～8 小時倒數。
+  在 duration 選項加一個 ∞：無 <code>endsAt</code>、無 timer、只有 NFC 或 emergency 能解。</p>
+</div>
+
+<div class="card">
+  <h3><span class="tag p1">P1</span>DeviceActivity 自動到期</h3>
+  <p>目前 shield 到期清除只靠 app 內 Timer，app 被殺掉後會鎖到下次開 app 為止，跟 UI 顯示的剩餘時間不符。
+  用 <code>DeviceActivityCenter</code> 排 schedule + Monitor extension 在 <code>intervalDidEnd</code> 清 shield。</p>
+</div>
+
+<div class="card">
+  <h3><span class="tag p1">P1</span>Emergency 次數搬進 Keychain</h3>
+  <p>現在放 UserDefaults，刪 app 重裝就回滿 5 次。Keychain 在 reinstall 後仍保留，一行 wrapper 就能換。</p>
+</div>
+
+<div class="card">
+  <h3><span class="tag p2">P2</span>NDEF 背景喚醒</h3>
+  <p>iPhone 對 NDEF tag 有系統級背景讀取：tag 寫入 universal link，碰一下手機直接拉起 app 進入解鎖流程。
+  這才是「拿手機碰磚」的正確姿勢，也順便解掉每次進前景就彈 NFC sheet 的干擾。</p>
+</div>
+
+<div class="card">
+  <h3><span class="tag p2">P2</span>移除裝飾性的 targetName</h3>
+  <p>「Reddit」只是顯示文字，實際 block 的是 FamilyActivitySelection，兩者可以完全對不上。
+  砍掉欄位，從 selection 摘要自動生成顯示名稱。</p>
+</div>
+
+<div class="card">
+  <h3><span class="tag p3">P3</span>防刪 app 提示 / 上架準備</h3>
+  <p>Family Controls entitlement 正式發佈需要跟 Apple 申請；另外評估 Screen Time 限制 app 刪除的引導文案。</p>
+</div>
+
+<h2>🎨 UI 改善計畫</h2>
+
+<table>
+  <tr><th>#</th><th>項目</th><th>內容</th><th>優先</th></tr>
+  <tr>
+    <td>U1</td><td>Bricked 全螢幕鎖定畫面</td>
+    <td>blocking 時整頁純黑、隱藏 TabBar，只剩鎖頭、倒數大字、「Scan to Unbrick」。狀態一眼可辨，也呼應 getbrick 的黑白品牌感。</td>
+    <td><span class="tag p1">P1</span></td>
+  </tr>
+  <tr>
+    <td>U2</td><td>首次啟動三步精靈</td>
+    <td>選 Apps → 掃卡配對 → 完成。目前新用戶要自己發現「Choose Apps」跟右上角小 NFC icon，流程散在兩個 tab。</td>
+    <td><span class="tag p1">P1</span></td>
+  </tr>
+  <tr>
+    <td>U3</td><td>狀態訊息改 toast</td>
+    <td>statusMessage 常駐面板像 log console。改成 3 秒自動消失的 toast，畫面留給主狀態。</td>
+    <td><span class="tag p2">P2</span></td>
+  </tr>
+  <tr>
+    <td>U4</td><td>Duration 改 preset chips</td>
+    <td>Stepper 按 31 次才能從 15m 到 8h。改成 30m / 1h / 2h / 4h / ∞ 一排 chips。</td>
+    <td><span class="tag p2">P2</span></td>
+  </tr>
+  <tr>
+    <td>U5</td><td>Settings 收納</td>
+    <td>Diagnostics + Debug 併成一個 NavigationLink 子頁；Emergency 移到最底、加紅色框強調「這會消耗次數」。</td>
+    <td><span class="tag p2">P2</span></td>
+  </tr>
+  <tr>
+    <td>U6</td><td>掃卡回饋</td>
+    <td>掃到卡成功 / 拒絕時加 haptics（success / error），鎖頭開合加 spring 動畫。廉價但體感差很多。</td>
+    <td><span class="tag p3">P3</span></td>
+  </tr>
+</table>
+
+<h2>📱 U1 畫面示意</h2>
+<div class="mock">
+  <div class="phone">
+    <div class="label">Ready</div>
+    <div class="big">🔓</div>
+    <div class="title">Ready to brick.</div>
+    <div class="sub">Social Apps · 2h</div>
+    <div class="btn dark">Brick Now</div>
+    <div class="btn ghost">1 paired key · Settings</div>
+  </div>
+  <div class="phone locked">
+    <div class="label">Bricked</div>
+    <div class="big">🔒</div>
+    <div class="countdown">1:47:12</div>
+    <div class="title">Your iPhone is bricked.</div>
+    <div class="sub">Scan your Brick to unlock</div>
+    <div class="btn dark">Scan to Unbrick</div>
+  </div>
+</div>
+
+<footer>Brick · improvement-plan.html · 產生於 2026-07-09</footer>
+</div>
+</body>
+</html>
