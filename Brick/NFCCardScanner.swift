@@ -15,7 +15,7 @@ final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDeleg
     NFCTagReaderSession.readingAvailable
   }
 
-  func beginScanning() {
+  func beginScanning(reason: String = "Manual scan requested.") {
     guard NFCTagReaderSession.readingAvailable else {
       lastErrorMessage = "NFC scanning is not available on this device."
       diagnosticLines = ["NFC unavailable on this device."]
@@ -25,7 +25,7 @@ final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDeleg
     lastErrorMessage = nil
     isScanning = true
     diagnosticLines = [
-      "Scan requested.",
+      reason,
       "Polling ISO 14443, ISO 15693, and ISO 18092."
     ]
 

@@ -66,6 +66,17 @@ final class BlockSessionModelTests: XCTestCase {
     XCTAssertFalse(model.isBlocking)
   }
 
+  func testAutoScanRequiresPairedKeyAndNoPendingKey() async {
+    let model = makeModel()
+    XCTAssertFalse(model.shouldAutoScanExistingKey)
+
+    model.addSeedKey(id: "known-key")
+    XCTAssertTrue(model.shouldAutoScanExistingKey)
+
+    await model.handleKeyScan(ScannedNFCKey(id: "new-key", defaultName: "Titan Key", kind: .titanKey, detail: "Tag type: ISO 7816"))
+    XCTAssertFalse(model.shouldAutoScanExistingKey)
+  }
+
   private func makeModel(
     shieldService: MockShieldService = MockShieldService(),
     defaults: UserDefaults? = nil

@@ -2,6 +2,7 @@ import FamilyControls
 import SwiftUI
 
 struct ContentView: View {
+  @Environment(\.scenePhase) private var scenePhase
   @EnvironmentObject private var model: BlockSessionModel
   @StateObject private var scanner = NFCCardScanner()
   @State private var isPickerPresented = false
@@ -44,7 +45,26 @@ struct ContentView: View {
           await model.handleKeyScan(scannedKey)
         }
       }
+      startAutoScanIfNeeded(reason: "App opened. Auto scanning paired NFC keys.")
     }
+    .onChange(of: scenePhase) { _, phase in
+      guard phase == .active else {
+        return
+      }
+
+      startAutoScanIfNeeded(reason: "App became active. Auto scanning paired NFC keys.")
+    }
+  }
+
+  private func startAutoScanIfNeeded(reason: String) {
+    guard model.shouldAutoScanExistingKey,
+          scanner.isAvailable,
+          !scanner.isScanning
+    else {
+      return
+    }
+
+    scanner.beginScanning(reason: reason)
   }
 }
 

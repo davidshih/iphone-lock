@@ -39,6 +39,10 @@ final class BlockSessionModel: ObservableObject {
     !selection.isEmpty
   }
 
+  var shouldAutoScanExistingKey: Bool {
+    !pairedKeys.isEmpty && pendingScannedKey == nil
+  }
+
   var remainingText: String {
     guard let endsAt = activeSession?.endsAt else {
       return "Not blocking"
