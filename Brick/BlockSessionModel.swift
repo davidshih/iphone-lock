@@ -1,12 +1,23 @@
 import FamilyControls
 import Foundation
 
+protocol ScreenTimeAuthorizing {
+  func requestAuthorization() async throws
+}
+
+struct ScreenTimeAuthorizer: ScreenTimeAuthorizing {
+  func requestAuthorization() async throws {
+    try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+  }
+}
+
 @MainActor
 final class BlockSessionModel: ObservableObject {
   @Published private(set) var authorizationStatusText = "Not requested"
   @Published private(set) var activeSession: BlockSession?
-  @Published private(set) var statusMessage = "Pair an EasyCard, then scan it to start blocking."
-  @Published private(set) var pairedCardID: String?
+  @Published private(set) var statusMessage = "Brick manually, or scan a paired NFC key to start blocking."
+  @Published private(set) var pairedKeys: [PairedNFCKey]
+  @Published var pendingScannedKey: ScannedNFCKey?
   @Published var settings: BrickSettings {
     didSet {
       settings.clampDuration()
@@ -16,6 +27,8 @@ final class BlockSessionModel: ObservableObject {
   @Published private(set) var selection: FamilyActivitySelection
 
   private let shieldService: ScreenTimeShieldServicing
+  private let authorizer: ScreenTimeAuthorizing
+  private let defaults: UserDefaults
   private var timer: Timer?
 
   var isBlocking: Bool {
@@ -40,12 +53,15 @@ final class BlockSessionModel: ObservableObject {
 
   init(
     shieldService: ScreenTimeShieldServicing = ScreenTimeShieldService(),
+    authorizer: ScreenTimeAuthorizing = ScreenTimeAuthorizer(),
     defaults: UserDefaults = .standard
   ) {
     self.shieldService = shieldService
+    self.authorizer = authorizer
+    self.defaults = defaults
     self.settings = SettingsStore.load(defaults: defaults)
     self.selection = ActivitySelectionStore.load(defaults: defaults)
-    self.pairedCardID = defaults.string(forKey: BrickDefaults.pairedCardIDKey)
+    self.pairedKeys = PairedNFCKeyStore.load(defaults: defaults)
   }
 
   func updateSelection(_ selection: FamilyActivitySelection) {
@@ -53,35 +69,53 @@ final class BlockSessionModel: ObservableObject {
     ActivitySelectionStore.save(selection)
   }
 
-  func clearPairedCard() {
-    pairedCardID = nil
-    UserDefaults.standard.removeObject(forKey: BrickDefaults.pairedCardIDKey)
-    statusMessage = "Pairing cleared. Scan your EasyCard to pair it again."
+  func forgetPairedKey(id: String) {
+    pairedKeys.removeAll { $0.id == id }
+    PairedNFCKeyStore.save(pairedKeys, defaults: defaults)
+    statusMessage = "NFC key removed."
   }
 
-  func handleCardScan(_ cardID: String) async {
-    if pairedCardID == nil {
-      pairedCardID = cardID
-      UserDefaults.standard.set(cardID, forKey: BrickDefaults.pairedCardIDKey)
-      statusMessage = "EasyCard paired. Scan it again to start blocking."
-      return
-    }
-
-    guard pairedCardID == cardID else {
-      statusMessage = "This is not the paired EasyCard."
+  func handleKeyScan(_ scannedKey: ScannedNFCKey) async {
+    guard pairedKeys.contains(where: { $0.id == scannedKey.id }) else {
+      pendingScannedKey = scannedKey
+      statusMessage = "New NFC key detected. Confirm it before using it to brick."
       return
     }
 
     if isBlocking {
-      stopBlocking(reason: "Unblocked by EasyCard.")
+      stopBlocking(reason: "Unblocked by NFC key.")
     } else {
       await startBlocking()
     }
   }
 
+  func addPendingKey(displayName: String, kind: PairedNFCKeyKind) {
+    guard let pendingScannedKey else {
+      return
+    }
+
+    let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+    let pairedKey = PairedNFCKey(
+      id: pendingScannedKey.id,
+      displayName: trimmedName.isEmpty ? kind.displayName : trimmedName,
+      kind: kind,
+      createdAt: Date()
+    )
+
+    pairedKeys.append(pairedKey)
+    PairedNFCKeyStore.save(pairedKeys, defaults: defaults)
+    self.pendingScannedKey = nil
+    statusMessage = "\(pairedKey.displayName) added. Scan it again to start or stop blocking."
+  }
+
+  func cancelPendingKey() {
+    pendingScannedKey = nil
+    statusMessage = "NFC key was not added."
+  }
+
   func requestAuthorization() async {
     do {
-      try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+      try await authorizer.requestAuthorization()
       authorizationStatusText = "Approved"
     } catch {
       authorizationStatusText = "Denied or unavailable"
@@ -91,7 +125,7 @@ final class BlockSessionModel: ObservableObject {
 
   func startBlocking() async {
     do {
-      try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+      try await authorizer.requestAuthorization()
       authorizationStatusText = "Approved"
 
       try shieldService.apply(selection: selection)
@@ -112,7 +146,7 @@ final class BlockSessionModel: ObservableObject {
   func stopBlocking(reason: String = "Blocking ended.") {
     shieldService.clear()
     activeSession = nil
-    UserDefaults.standard.removeObject(forKey: BrickDefaults.sessionKey)
+    defaults.removeObject(forKey: BrickDefaults.sessionKey)
     timer?.invalidate()
     timer = nil
     statusMessage = reason
@@ -120,7 +154,7 @@ final class BlockSessionModel: ObservableObject {
 
   func restoreSessionIfNeeded() async {
     guard
-      let data = UserDefaults.standard.data(forKey: BrickDefaults.sessionKey),
+      let data = defaults.data(forKey: BrickDefaults.sessionKey),
       let session = try? JSONDecoder().decode(BlockSession.self, from: data)
     else {
       return
@@ -143,7 +177,7 @@ final class BlockSessionModel: ObservableObject {
 
   private func saveSession(_ session: BlockSession) {
     let data = try? JSONEncoder().encode(session)
-    UserDefaults.standard.set(data, forKey: BrickDefaults.sessionKey)
+    defaults.set(data, forKey: BrickDefaults.sessionKey)
   }
 
   private func startTimer() {

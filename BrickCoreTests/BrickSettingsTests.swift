@@ -20,4 +20,29 @@ final class BrickSettingsTests: XCTestCase {
 
     XCTAssertEqual(loaded.durationMinutes, 480)
   }
+
+  func testPairedNFCKeyStorePersistsMultipleKeys() {
+    let defaults = UserDefaults(suiteName: "PairedNFCKeyStoreTests.\(UUID().uuidString)")!
+    let keys = [
+      PairedNFCKey(id: "easy-card-id", displayName: "EasyCard", kind: .easyCard, createdAt: Date(timeIntervalSince1970: 10)),
+      PairedNFCKey(id: "yubikey-id", displayName: "YubiKey 5C", kind: .yubiKey, createdAt: Date(timeIntervalSince1970: 20)),
+      PairedNFCKey(id: "titan-id", displayName: "Titan", kind: .titanKey, createdAt: Date(timeIntervalSince1970: 30))
+    ]
+
+    PairedNFCKeyStore.save(keys, defaults: defaults)
+
+    XCTAssertEqual(PairedNFCKeyStore.load(defaults: defaults), keys)
+  }
+
+  func testPairedNFCKeyStoreMigratesLegacySingleCard() {
+    let defaults = UserDefaults(suiteName: "PairedNFCKeyStoreTests.\(UUID().uuidString)")!
+    defaults.set("legacy-card-id", forKey: BrickDefaults.pairedCardIDKey)
+
+    let loaded = PairedNFCKeyStore.load(defaults: defaults)
+
+    XCTAssertEqual(loaded.count, 1)
+    XCTAssertEqual(loaded.first?.id, "legacy-card-id")
+    XCTAssertEqual(loaded.first?.kind, .easyCard)
+    XCTAssertNil(defaults.string(forKey: BrickDefaults.pairedCardIDKey))
+  }
 }

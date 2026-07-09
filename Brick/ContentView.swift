@@ -27,10 +27,21 @@ struct ContentView: View {
         set: { model.updateSelection($0) }
       )
     )
+    .sheet(item: $model.pendingScannedKey) { scannedKey in
+      AddNFCKeySheet(
+        scannedKey: scannedKey,
+        onAdd: { name, kind in
+          model.addPendingKey(displayName: name, kind: kind)
+        },
+        onCancel: {
+          model.cancelPendingKey()
+        }
+      )
+    }
     .onAppear {
-      scanner.onCardID = { cardID in
+      scanner.onKeyScanned = { scannedKey in
         Task {
-          await model.handleCardScan(cardID)
+          await model.handleKeyScan(scannedKey)
         }
       }
     }
@@ -43,13 +54,13 @@ private struct HomeView: View {
 
   var body: some View {
     NavigationStack {
-      VStack(spacing: 28) {
+      VStack(spacing: 24) {
         Spacer(minLength: 12)
 
         statusBadge
         lockMark
         statusCopy
-        cardPanel
+        pairedKeySummary
         primaryAction
         helperCopy
 
@@ -67,6 +78,17 @@ private struct HomeView: View {
       .padding(.horizontal, 24)
       .background(Color(.systemGroupedBackground))
       .navigationTitle("Brick")
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          Button {
+            scanner.beginScanning()
+          } label: {
+            Label("Scan NFC", systemImage: scanner.isScanning ? "wave.3.right.circle.fill" : "wave.3.right.circle")
+          }
+          .disabled(scanner.isScanning || !scanner.isAvailable)
+          .accessibilityIdentifier("scanNFCIconButton")
+        }
+      }
     }
   }
 
@@ -96,115 +118,67 @@ private struct HomeView: View {
 
   private var statusCopy: some View {
     VStack(spacing: 8) {
-      Text(statusTitle)
+      Text(model.isBlocking ? "Your iPhone is bricked." : "Ready to brick.")
         .font(.title2.weight(.semibold))
         .multilineTextAlignment(.center)
 
-      Text(statusSubtitle)
+      Text(model.isBlocking ? model.remainingText : "Blocks \(model.settings.targetName) for \(durationText).")
         .font(.body)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
     }
   }
 
-  private var cardPanel: some View {
-    Button {
-      scanner.beginScanning()
-    } label: {
-      VStack(spacing: 14) {
-        HStack(spacing: 12) {
-          RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Color.black)
-            .frame(width: 54, height: 36)
-            .overlay {
-              Image(systemName: "wave.3.right")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
-            }
+  private var pairedKeySummary: some View {
+    HStack(spacing: 12) {
+      Image(systemName: "key.radiowaves.forward")
+        .font(.title3.weight(.semibold))
+        .foregroundStyle(.white)
+        .frame(width: 42, height: 42)
+        .background(Color.black)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-          VStack(alignment: .leading, spacing: 3) {
-            Text("EasyCard")
-              .font(.headline)
-              .foregroundStyle(.primary)
-            Text(model.pairedCardID == nil ? "Not paired yet" : "Paired")
-              .font(.subheadline)
-              .foregroundStyle(.secondary)
-          }
-
-          Spacer()
-
-          Image(systemName: "chevron.right")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.tertiary)
-        }
-
-        Text(model.statusMessage)
-          .font(.footnote)
+      VStack(alignment: .leading, spacing: 3) {
+        Text("\(model.pairedKeys.count) paired NFC \(model.pairedKeys.count == 1 ? "key" : "keys")")
+          .font(.headline)
+        Text(scanner.isScanning ? "Hold near NFC key" : "Tap the small NFC icon to scan")
+          .font(.subheadline)
           .foregroundStyle(.secondary)
-          .frame(maxWidth: .infinity, alignment: .leading)
       }
+
+      Spacer()
     }
-    .padding(18)
+    .padding(16)
     .background(Color(.secondarySystemGroupedBackground))
     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-    .buttonStyle(.plain)
-    .disabled(scanner.isScanning || !scanner.isAvailable)
-    .accessibilityIdentifier("easyCardPanelButton")
   }
 
   private var primaryAction: some View {
     Button {
-      scanner.beginScanning()
+      if model.isBlocking {
+        model.stopBlocking(reason: "Unblocked manually.")
+      } else {
+        Task {
+          await model.startBlocking()
+        }
+      }
     } label: {
-      Text(primaryActionTitle)
+      Text(model.isBlocking ? "Stop Brick" : "Brick Now")
         .font(.headline)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
     }
     .buttonStyle(.borderedProminent)
-    .tint(.black)
-    .disabled(scanner.isScanning || !scanner.isAvailable)
-    .accessibilityIdentifier("scanEasyCardButton")
+    .tint(model.isBlocking ? .red : .black)
+    .accessibilityIdentifier("brickNowButton")
   }
 
   private var helperCopy: some View {
-    Text(scanner.isAvailable ? "Tap the button, then hold the top of your iPhone near the card." : "NFC scanning is unavailable on this device.")
+    Text(scanner.isAvailable ? "Paired NFC keys also start or stop blocking automatically." : "NFC scanning is unavailable on this device.")
       .font(.footnote)
       .foregroundStyle(.secondary)
       .multilineTextAlignment(.center)
       .padding(.horizontal, 12)
-  }
-
-  private var statusTitle: String {
-    if model.isBlocking {
-      return "Your iPhone is bricked."
-    }
-
-    if model.pairedCardID == nil {
-      return "Pair your Brick card."
-    }
-
-    return "Tap your EasyCard to brick."
-  }
-
-  private var statusSubtitle: String {
-    if model.isBlocking {
-      return model.remainingText
-    }
-
-    return "Blocks \(model.settings.targetName) for \(durationText)."
-  }
-
-  private var primaryActionTitle: String {
-    if scanner.isScanning {
-      return "Hold Near EasyCard"
-    }
-
-    if model.pairedCardID == nil {
-      return "Pair Brick"
-    }
-
-    return "Scan Brick"
   }
 
   private var durationText: String {
@@ -232,7 +206,7 @@ private struct SettingsView: View {
     NavigationStack {
       Form {
         blockSettingsSection
-        cardSection
+        pairedKeysSection
         manualControlsSection
         diagnosticsSection
         nfcDiagnosticsSection
@@ -263,14 +237,41 @@ private struct SettingsView: View {
     }
   }
 
-  private var cardSection: some View {
-    Section("EasyCard") {
-      LabeledContent("Pairing", value: model.pairedCardID == nil ? "Not paired" : "Paired")
+  private var pairedKeysSection: some View {
+    Section("Paired NFC Keys") {
+      if model.pairedKeys.isEmpty {
+        Text("No NFC keys paired.")
+          .foregroundStyle(.secondary)
+      } else {
+        ForEach(model.pairedKeys) { key in
+          HStack(spacing: 12) {
+            Image(systemName: iconName(for: key.kind))
+              .foregroundStyle(.secondary)
+              .frame(width: 24)
 
-      Button("Forget EasyCard", role: .destructive) {
-        model.clearPairedCard()
+            VStack(alignment: .leading, spacing: 3) {
+              Text(key.displayName)
+              Text("\(key.kind.displayName) · \(key.shortID)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button("Forget", role: .destructive) {
+              model.forgetPairedKey(id: key.id)
+            }
+            .font(.subheadline)
+          }
+        }
       }
-      .disabled(model.pairedCardID == nil)
+
+      Button {
+        scanner.beginScanning()
+      } label: {
+        Label("Add NFC Key", systemImage: "plus.circle")
+      }
+      .disabled(scanner.isScanning || !scanner.isAvailable)
     }
   }
 
@@ -282,17 +283,16 @@ private struct SettingsView: View {
         }
       }
 
-      Button("Start Block") {
-        Task {
-          await model.startBlocking()
+      Button(model.isBlocking ? "End Block Now" : "Start Block") {
+        if model.isBlocking {
+          model.stopBlocking(reason: "Unblocked manually.")
+        } else {
+          Task {
+            await model.startBlocking()
+          }
         }
       }
-      .disabled(model.isBlocking)
-
-      Button("End Block Now", role: .destructive) {
-        model.stopBlocking(reason: "Unblocked manually.")
-      }
-      .disabled(!model.isBlocking)
+      .foregroundStyle(model.isBlocking ? .red : .primary)
     }
   }
 
@@ -321,6 +321,17 @@ private struct SettingsView: View {
     }
   }
 
+  private func iconName(for kind: PairedNFCKeyKind) -> String {
+    switch kind {
+    case .easyCard:
+      return "creditcard"
+    case .yubiKey, .titanKey:
+      return "key"
+    case .nfcKey:
+      return "key.radiowaves.forward"
+    }
+  }
+
   private var durationText: String {
     let hours = model.settings.durationMinutes / 60
     let minutes = model.settings.durationMinutes % 60
@@ -334,6 +345,66 @@ private struct SettingsView: View {
     }
 
     return "\(minutes)m"
+  }
+}
+
+private struct AddNFCKeySheet: View {
+  let scannedKey: ScannedNFCKey
+  let onAdd: (String, PairedNFCKeyKind) -> Void
+  let onCancel: () -> Void
+
+  @Environment(\.dismiss) private var dismiss
+  @State private var displayName: String
+  @State private var kind: PairedNFCKeyKind
+
+  init(
+    scannedKey: ScannedNFCKey,
+    onAdd: @escaping (String, PairedNFCKeyKind) -> Void,
+    onCancel: @escaping () -> Void
+  ) {
+    self.scannedKey = scannedKey
+    self.onAdd = onAdd
+    self.onCancel = onCancel
+    _displayName = State(initialValue: scannedKey.defaultName)
+    _kind = State(initialValue: scannedKey.kind)
+  }
+
+  var body: some View {
+    NavigationStack {
+      Form {
+        Section("Name") {
+          TextField("Key name", text: $displayName)
+          Picker("Type", selection: $kind) {
+            ForEach(PairedNFCKeyKind.allCases, id: \.self) { kind in
+              Text(kind.displayName).tag(kind)
+            }
+          }
+        }
+
+        Section("Detected NFC") {
+          Text(scannedKey.detail)
+            .font(.footnote.monospaced())
+            .textSelection(.enabled)
+          LabeledContent("Short ID", value: String(scannedKey.id.prefix(12)))
+        }
+      }
+      .navigationTitle("Add this NFC key?")
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            onCancel()
+            dismiss()
+          }
+        }
+
+        ToolbarItem(placement: .confirmationAction) {
+          Button("Add Key") {
+            onAdd(displayName, kind)
+            dismiss()
+          }
+        }
+      }
+    }
   }
 }
 

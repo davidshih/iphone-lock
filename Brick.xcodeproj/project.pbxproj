@@ -15,6 +15,7 @@
 		462519CC94E5A11D02E7A62F /* NFCCardScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4ED371E6477832AB14B83E /* NFCCardScanner.swift */; };
 		4A35D8A71F11C00F2C08BA51 /* ScreenTimeShieldService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18CCC36314773E75197FAC1 /* ScreenTimeShieldService.swift */; };
 		7365D56938627D228C693A55 /* BlockSessionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF407772AC187118A816AE51 /* BlockSessionModel.swift */; };
+		7F6E22DF056A09143FE48BAA /* BlockSessionModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5612EF002B0DA32E246CDD30 /* BlockSessionModelTests.swift */; };
 		8EC44400B28ED8ADBBB70EBD /* BrickSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8599FD3DB2C48EE04D4C74FF /* BrickSettings.swift */; };
 		94DD64FC69B7E318E67EF956 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96F33C8C5ACC0B1F44364963 /* ContentView.swift */; };
 		9B7FCA180FB72F25E71EEF9C /* BlockSessionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF407772AC187118A816AE51 /* BlockSessionModel.swift */; };
@@ -37,6 +38,7 @@
 /* Begin PBXFileReference section */
 		02BF1B84BAC3F27089CFC2A0 /* BrickApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickApp.swift; sourceTree = "<group>"; };
 		48191F6E9D7314CFB80297B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		5612EF002B0DA32E246CDD30 /* BlockSessionModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockSessionModelTests.swift; sourceTree = "<group>"; };
 		830DFB6FA98474224DD2F8A9 /* BrickPreview.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BrickPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8599FD3DB2C48EE04D4C74FF /* BrickSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickSettings.swift; sourceTree = "<group>"; };
 		8FC1994AD231DDF4EDAEFF15 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 		CA5D003A15CC26A15032C6C6 /* BrickTests */ = {
 			isa = PBXGroup;
 			children = (
+				5612EF002B0DA32E246CDD30 /* BlockSessionModelTests.swift */,
 				EBDB0E05903E849B173F1C09 /* BrickSettingsTests.swift */,
 			);
 			path = BrickTests;
@@ -224,6 +227,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7F6E22DF056A09143FE48BAA /* BlockSessionModelTests.swift in Sources */,
 				15C653ED14066234B272D864 /* BrickSettingsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

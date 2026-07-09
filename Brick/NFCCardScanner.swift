@@ -7,7 +7,7 @@ final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDeleg
   @Published private(set) var lastErrorMessage: String?
   @Published private(set) var diagnosticLines: [String] = ["NFC idle."]
 
-  var onCardID: ((String) -> Void)?
+  var onKeyScanned: ((ScannedNFCKey) -> Void)?
 
   private var session: NFCTagReaderSession?
 
@@ -87,14 +87,14 @@ final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDeleg
         return
       }
 
-      let cardID = NFCFingerprint.cardID(from: tag)
+      let scannedKey = NFCFingerprint.scannedKey(from: tag)
       session.alertMessage = "Card scanned."
       session.invalidate()
 
       DispatchQueue.main.async {
         self.isScanning = false
-        self.diagnosticLines.append("Card fingerprint saved: \(cardID.prefix(12))...")
-        self.onCardID?(cardID)
+        self.diagnosticLines.append("Card fingerprint saved: \(scannedKey.id.prefix(12))...")
+        self.onKeyScanned?(scannedKey)
       }
     }
   }
@@ -103,6 +103,18 @@ final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDeleg
 enum NFCFingerprint {
   static func cardID(from tag: NFCTag) -> String {
     fingerprint(bytes: identifierBytes(from: tag))
+  }
+
+  static func scannedKey(from tag: NFCTag) -> ScannedNFCKey {
+    let summary = summary(from: tag)
+    let kind = inferredKind(from: tag)
+
+    return ScannedNFCKey(
+      id: cardID(from: tag),
+      defaultName: kind.displayName,
+      kind: kind,
+      detail: summary
+    )
   }
 
   static func summary(from tag: NFCTag) -> String {
@@ -120,6 +132,28 @@ enum NFCFingerprint {
       return "Tag type: FeliCa, \(byteSummary)."
     @unknown default:
       return "Tag type: unknown, \(byteSummary)."
+    }
+  }
+
+  private static func inferredKind(from tag: NFCTag) -> PairedNFCKeyKind {
+    switch tag {
+    case .iso7816(let tag):
+      let aid = tag.initialSelectedAID.uppercased()
+      if aid.hasPrefix("A000000527") {
+        return .yubiKey
+      }
+
+      if aid == "A0000006472F0001" {
+        return .titanKey
+      }
+
+      return .nfcKey
+    case .miFare, .feliCa:
+      return .easyCard
+    case .iso15693:
+      return .nfcKey
+    @unknown default:
+      return .nfcKey
     }
   }
 
