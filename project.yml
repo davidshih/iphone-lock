@@ -41,7 +41,7 @@ targets:
       - BrickCore
     settings:
       base:
-        PRODUCT_NAME: Brick
+        PRODUCT_NAME: Brick Preview
         PRODUCT_BUNDLE_IDENTIFIER: com.davidshih.brick.preview
         INFOPLIST_FILE: Brick/Info.plist
         GENERATE_INFOPLIST_FILE: NO

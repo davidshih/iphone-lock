@@ -51,6 +51,7 @@ private struct HomeView: View {
         statusCopy
         cardPanel
         primaryAction
+        helperCopy
 
         if let lastErrorMessage = scanner.lastErrorMessage {
           Text(lastErrorMessage)
@@ -95,11 +96,11 @@ private struct HomeView: View {
 
   private var statusCopy: some View {
     VStack(spacing: 8) {
-      Text(model.isBlocking ? "Your iPhone is bricked." : "Tap your EasyCard to brick.")
+      Text(statusTitle)
         .font(.title2.weight(.semibold))
         .multilineTextAlignment(.center)
 
-      Text(model.isBlocking ? model.remainingText : "Blocks \(model.settings.targetName) for \(durationText).")
+      Text(statusSubtitle)
         .font(.body)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
@@ -107,43 +108,55 @@ private struct HomeView: View {
   }
 
   private var cardPanel: some View {
-    VStack(spacing: 14) {
-      HStack(spacing: 12) {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-          .fill(Color.black)
-          .frame(width: 54, height: 36)
-          .overlay {
-            Image(systemName: "wave.3.right")
-              .font(.title3.weight(.semibold))
-              .foregroundStyle(.white)
+    Button {
+      scanner.beginScanning()
+    } label: {
+      VStack(spacing: 14) {
+        HStack(spacing: 12) {
+          RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(Color.black)
+            .frame(width: 54, height: 36)
+            .overlay {
+              Image(systemName: "wave.3.right")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.white)
+            }
+
+          VStack(alignment: .leading, spacing: 3) {
+            Text("EasyCard")
+              .font(.headline)
+              .foregroundStyle(.primary)
+            Text(model.pairedCardID == nil ? "Not paired yet" : "Paired")
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
           }
 
-        VStack(alignment: .leading, spacing: 3) {
-          Text("EasyCard")
-            .font(.headline)
-          Text(model.pairedCardID == nil ? "Not paired yet" : "Paired")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+          Spacer()
+
+          Image(systemName: "chevron.right")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.tertiary)
         }
 
-        Spacer()
+        Text(model.statusMessage)
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, alignment: .leading)
       }
-
-      Text(model.statusMessage)
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding(18)
     .background(Color(.secondarySystemGroupedBackground))
     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    .buttonStyle(.plain)
+    .disabled(scanner.isScanning || !scanner.isAvailable)
+    .accessibilityIdentifier("easyCardPanelButton")
   }
 
   private var primaryAction: some View {
     Button {
       scanner.beginScanning()
     } label: {
-      Text(scanner.isScanning ? "Hold Near EasyCard" : "Scan EasyCard")
+      Text(primaryActionTitle)
         .font(.headline)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
@@ -152,6 +165,46 @@ private struct HomeView: View {
     .tint(.black)
     .disabled(scanner.isScanning || !scanner.isAvailable)
     .accessibilityIdentifier("scanEasyCardButton")
+  }
+
+  private var helperCopy: some View {
+    Text(scanner.isAvailable ? "Tap the button, then hold the top of your iPhone near the card." : "NFC scanning is unavailable on this device.")
+      .font(.footnote)
+      .foregroundStyle(.secondary)
+      .multilineTextAlignment(.center)
+      .padding(.horizontal, 12)
+  }
+
+  private var statusTitle: String {
+    if model.isBlocking {
+      return "Your iPhone is bricked."
+    }
+
+    if model.pairedCardID == nil {
+      return "Pair your Brick card."
+    }
+
+    return "Tap your EasyCard to brick."
+  }
+
+  private var statusSubtitle: String {
+    if model.isBlocking {
+      return model.remainingText
+    }
+
+    return "Blocks \(model.settings.targetName) for \(durationText)."
+  }
+
+  private var primaryActionTitle: String {
+    if scanner.isScanning {
+      return "Hold Near EasyCard"
+    }
+
+    if model.pairedCardID == nil {
+      return "Pair Brick"
+    }
+
+    return "Scan Brick"
   }
 
   private var durationText: String {
