@@ -14,7 +14,7 @@ struct ContentView: View {
           Label("Brick", systemImage: "lock.fill")
         }
 
-      SettingsView(isPickerPresented: $isPickerPresented)
+      SettingsView(scanner: scanner, isPickerPresented: $isPickerPresented)
         .environmentObject(model)
         .tabItem {
           Label("Settings", systemImage: "slider.horizontal.3")
@@ -225,6 +225,7 @@ private struct HomeView: View {
 
 private struct SettingsView: View {
   @EnvironmentObject private var model: BlockSessionModel
+  @ObservedObject var scanner: NFCCardScanner
   @Binding var isPickerPresented: Bool
 
   var body: some View {
@@ -234,6 +235,7 @@ private struct SettingsView: View {
         cardSection
         manualControlsSection
         diagnosticsSection
+        nfcDiagnosticsSection
       }
       .navigationTitle("Settings")
     }
@@ -302,6 +304,20 @@ private struct SettingsView: View {
       Text("NFC and Screen Time require Apple-approved capabilities on a paid developer team.")
         .font(.footnote)
         .foregroundStyle(.secondary)
+    }
+  }
+
+  private var nfcDiagnosticsSection: some View {
+    Section("NFC Diagnostics") {
+      LabeledContent("Reader", value: scanner.isAvailable ? "Available" : "Unavailable")
+      LabeledContent("Scanning", value: scanner.isScanning ? "Active" : "Idle")
+
+      ForEach(Array(scanner.diagnosticLines.enumerated()), id: \.offset) { _, line in
+        Text(line)
+          .font(.footnote.monospaced())
+          .foregroundStyle(.secondary)
+          .textSelection(.enabled)
+      }
     }
   }
 
