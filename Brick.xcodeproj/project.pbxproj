@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		15C653ED14066234B272D864 /* BrickSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBDB0E05903E849B173F1C09 /* BrickSettingsTests.swift */; };
+		2CBD62A65D1DF3DA0CE305A8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FC1994AD231DDF4EDAEFF15 /* Assets.xcassets */; };
 		462519CC94E5A11D02E7A62F /* NFCCardScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4ED371E6477832AB14B83E /* NFCCardScanner.swift */; };
 		4A35D8A71F11C00F2C08BA51 /* ScreenTimeShieldService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18CCC36314773E75197FAC1 /* ScreenTimeShieldService.swift */; };
 		7365D56938627D228C693A55 /* BlockSessionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF407772AC187118A816AE51 /* BlockSessionModel.swift */; };
@@ -30,6 +31,7 @@
 		02BF1B84BAC3F27089CFC2A0 /* BrickApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickApp.swift; sourceTree = "<group>"; };
 		48191F6E9D7314CFB80297B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8599FD3DB2C48EE04D4C74FF /* BrickSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickSettings.swift; sourceTree = "<group>"; };
+		8FC1994AD231DDF4EDAEFF15 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		96F33C8C5ACC0B1F44364963 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9F4ED371E6477832AB14B83E /* NFCCardScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NFCCardScanner.swift; sourceTree = "<group>"; };
 		A18CCC36314773E75197FAC1 /* ScreenTimeShieldService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTimeShieldService.swift; sourceTree = "<group>"; };
@@ -71,6 +73,7 @@
 		96243320245C2ACB581A18C0 /* Brick */ = {
 			isa = PBXGroup;
 			children = (
+				8FC1994AD231DDF4EDAEFF15 /* Assets.xcassets */,
 				EF407772AC187118A816AE51 /* BlockSessionModel.swift */,
 				AEE5301B45DD451CB4E17ECC /* Brick.entitlements */,
 				02BF1B84BAC3F27089CFC2A0 /* BrickApp.swift */,
@@ -98,6 +101,7 @@
 			buildConfigurationList = 85A2B6AC7FC6BEC78FBF60DC /* Build configuration list for PBXNativeTarget "Brick" */;
 			buildPhases = (
 				F3970206CBE964FC86DDDAC6 /* Sources */,
+				87800B270ED5B1B606E94D48 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -164,6 +168,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		87800B270ED5B1B606E94D48 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2CBD62A65D1DF3DA0CE305A8 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0041983F2B6F67849A3907E0 /* Sources */ = {

@@ -24,8 +24,14 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Brick/Brick.entitlements
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     entitlements:
       path: Brick/Brick.entitlements
+      properties:
+        com.apple.developer.family-controls: true
+        com.apple.developer.nfc.readersession.formats:
+          - NDEF
+          - TAG
   BrickTests:
     type: bundle.unit-test
     platform: iOS

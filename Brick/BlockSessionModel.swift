@@ -5,7 +5,7 @@ import Foundation
 final class BlockSessionModel: ObservableObject {
   @Published private(set) var authorizationStatusText = "Not requested"
   @Published private(set) var activeSession: BlockSession?
-  @Published private(set) var statusMessage = "Ready to block Reddit for 2 hours."
+  @Published private(set) var statusMessage = "Pair an EasyCard, then scan it to start blocking."
   @Published private(set) var pairedCardID: String?
   @Published var settings: BrickSettings {
     didSet {
@@ -56,24 +56,24 @@ final class BlockSessionModel: ObservableObject {
   func clearPairedCard() {
     pairedCardID = nil
     UserDefaults.standard.removeObject(forKey: BrickDefaults.pairedCardIDKey)
-    statusMessage = "Pairing cleared. Scan a card to pair it again."
+    statusMessage = "Pairing cleared. Scan your EasyCard to pair it again."
   }
 
   func handleCardScan(_ cardID: String) async {
     if pairedCardID == nil {
       pairedCardID = cardID
       UserDefaults.standard.set(cardID, forKey: BrickDefaults.pairedCardIDKey)
-      statusMessage = "Card paired. Scan it again to start blocking."
+      statusMessage = "EasyCard paired. Scan it again to start blocking."
       return
     }
 
     guard pairedCardID == cardID else {
-      statusMessage = "This is not the paired Brick card."
+      statusMessage = "This is not the paired EasyCard."
       return
     }
 
     if isBlocking {
-      stopBlocking(reason: "Unblocked by NFC card.")
+      stopBlocking(reason: "Unblocked by EasyCard.")
     } else {
       await startBlocking()
     }
