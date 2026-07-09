@@ -49,9 +49,58 @@ final class BlockSessionModelTests: XCTestCase {
     await model.handleKeyScan(scannedKey)
     await model.handleKeyScan(scannedKey)
 
+    XCTAssertTrue(model.isBlocking)
+    XCTAssertEqual(model.pendingUnbrickRequest?.displayName, "Seed YubiKey")
+    model.confirmPendingUnbrick()
+
     XCTAssertFalse(model.isBlocking)
     XCTAssertEqual(shieldService.clearCount, 1)
     XCTAssertEqual(model.statusMessage, "Unblocked by Seed YubiKey.")
+  }
+
+  func testCancelingPendingUnbrickKeepsBlockActive() async {
+    let shieldService = MockShieldService()
+    let model = makeModel(shieldService: shieldService)
+    let scannedKey = ScannedNFCKey(id: "known-key", defaultName: "YubiKey", kind: .yubiKey, detail: "Tag type: ISO 7816")
+    model.addSeedKey(id: "known-key")
+
+    await model.handleKeyScan(scannedKey)
+    await model.handleKeyScan(scannedKey)
+    model.cancelPendingUnbrick()
+
+    XCTAssertTrue(model.isBlocking)
+    XCTAssertNil(model.pendingUnbrickRequest)
+    XCTAssertEqual(model.statusMessage, "Stayed bricked.")
+  }
+
+  func testEmergencyUnbrickStopsBlockAndDecrementsCount() async {
+    let shieldService = MockShieldService()
+    let defaults = testDefaults()
+    let model = makeModel(shieldService: shieldService, defaults: defaults)
+    let scannedKey = ScannedNFCKey(id: "known-key", defaultName: "YubiKey", kind: .yubiKey, detail: "Tag type: ISO 7816")
+    model.addSeedKey(id: "known-key")
+
+    await model.handleKeyScan(scannedKey)
+    model.useEmergencyUnbrick()
+
+    XCTAssertFalse(model.isBlocking)
+    XCTAssertEqual(model.emergencyUnbricksRemaining, 4)
+    XCTAssertEqual(defaults.integer(forKey: BrickDefaults.emergencyUnbricksRemainingKey), 4)
+  }
+
+  func testUnknownKeyDuringBlockIsRejectedWithoutPairing() async {
+    let model = makeModel()
+    model.addSeedKey(id: "known-key")
+
+    await model.handleKeyScan(ScannedNFCKey(id: "known-key", defaultName: "YubiKey", kind: .yubiKey, detail: "Tag type: ISO 7816"))
+    XCTAssertTrue(model.isBlocking)
+
+    await model.handleKeyScan(ScannedNFCKey(id: "intruder", defaultName: "EasyCard", kind: .easyCard, detail: "Tag type: MiFare"))
+
+    XCTAssertNil(model.pendingScannedKey)
+    XCTAssertNil(model.pendingUnbrickRequest)
+    XCTAssertTrue(model.isBlocking)
+    XCTAssertEqual(model.statusMessage, "Unknown NFC key. Only an already-paired key can unbrick.")
   }
 
   func testForgottenKeyBecomesPendingAgain() async {

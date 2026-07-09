@@ -39,6 +39,17 @@ struct ContentView: View {
         }
       )
     }
+    .sheet(item: $model.pendingUnbrickRequest) { request in
+      ConfirmUnbrickSheet(
+        request: request,
+        onConfirm: {
+          model.confirmPendingUnbrick()
+        },
+        onCancel: {
+          model.cancelPendingUnbrick()
+        }
+      )
+    }
     .onAppear {
       scanner.onKeyScanned = { scannedKey in
         Task {
@@ -85,6 +96,7 @@ private struct HomeView: View {
         statusPanel
         setupAction
         primaryAction
+        smallManualStop
         helperCopy
 
         if let lastErrorMessage = scanner.lastErrorMessage {
@@ -207,14 +219,14 @@ private struct HomeView: View {
   private var primaryAction: some View {
     Button {
       if model.isBlocking {
-        model.stopBlocking(reason: "Unblocked manually.")
+        scanner.beginScanning(reason: "Manual unbrick scan requested.")
       } else {
         Task {
           await model.startBlocking()
         }
       }
     } label: {
-      Text(model.isBlocking ? "Stop Brick" : "Brick Now")
+      Text(model.isBlocking ? "Scan Brick to Unbrick" : "Brick Now")
         .font(.headline)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
@@ -222,6 +234,22 @@ private struct HomeView: View {
     .buttonStyle(.borderedProminent)
     .tint(model.isBlocking ? .red : .black)
     .accessibilityIdentifier("brickNowButton")
+  }
+
+  @ViewBuilder
+  private var smallManualStop: some View {
+    // Release builds must not offer a stop path that skips the NFC key.
+    #if DEBUG
+    if model.isBlocking {
+      Button("Manual Stop (Debug)") {
+        model.stopBlocking(reason: "Unblocked manually.")
+      }
+      .font(.footnote.weight(.semibold))
+      .foregroundStyle(.red)
+      .buttonStyle(.plain)
+      .accessibilityIdentifier("manualStopHomeButton")
+    }
+    #endif
   }
 
   private var helperCopy: some View {
@@ -271,8 +299,9 @@ private struct SettingsView: View {
         blockSettingsSection
         pairedKeysSection
         manualControlsSection
+        emergencySection
         diagnosticsSection
-        nfcDiagnosticsSection
+        debugSection
       }
       .navigationTitle("Settings")
     }
@@ -346,16 +375,21 @@ private struct SettingsView: View {
         }
       }
 
-      Button(model.isBlocking ? "End Block Now" : "Start Block") {
-        if model.isBlocking {
+      if model.isBlocking {
+        // Release builds must not offer a stop path that skips the NFC key.
+        #if DEBUG
+        Button("End Block Now (Debug)") {
           model.stopBlocking(reason: "Unblocked manually.")
-        } else {
+        }
+        .foregroundStyle(Color.red)
+        #endif
+      } else {
+        Button("Start Block") {
           Task {
             await model.startBlocking()
           }
         }
       }
-      .foregroundStyle(model.isBlocking ? .red : .primary)
     }
   }
 
@@ -370,16 +404,33 @@ private struct SettingsView: View {
     }
   }
 
-  private var nfcDiagnosticsSection: some View {
-    Section("NFC Diagnostics") {
-      LabeledContent("Reader", value: scanner.isAvailable ? "Available" : "Unavailable")
-      LabeledContent("Scanning", value: scanner.isScanning ? "Active" : "Idle")
+  private var emergencySection: some View {
+    Section("Emergency") {
+      LabeledContent("Emergency Unbricks", value: "\(model.emergencyUnbricksRemaining) left")
 
-      ForEach(Array(scanner.diagnosticLines.enumerated()), id: \.offset) { _, line in
-        Text(line)
-          .font(.footnote.monospaced())
-          .foregroundStyle(.secondary)
-          .textSelection(.enabled)
+      Button("Use Emergency Unbrick", role: .destructive) {
+        model.useEmergencyUnbrick()
+      }
+      .disabled(!model.isBlocking || model.emergencyUnbricksRemaining == 0)
+
+      Text("Use this only when you cannot reach your physical Brick.")
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+    }
+  }
+
+  private var debugSection: some View {
+    Section("Debug") {
+      DisclosureGroup("NFC Diagnostics") {
+        LabeledContent("Reader", value: scanner.isAvailable ? "Available" : "Unavailable")
+        LabeledContent("Scanning", value: scanner.isScanning ? "Active" : "Idle")
+
+        ForEach(Array(scanner.diagnosticLines.enumerated()), id: \.offset) { _, line in
+          Text(line)
+            .font(.footnote.monospaced())
+            .foregroundStyle(.secondary)
+            .textSelection(.enabled)
+        }
       }
     }
   }
@@ -468,6 +519,72 @@ private struct AddNFCKeySheet: View {
         }
       }
     }
+  }
+}
+
+private struct ConfirmUnbrickSheet: View {
+  let request: PendingUnbrickRequest
+  let onConfirm: () -> Void
+  let onCancel: () -> Void
+
+  @Environment(\.dismiss) private var dismiss
+  @State private var countdown = 5
+
+  var body: some View {
+    NavigationStack {
+      VStack(spacing: 24) {
+        Image(systemName: "lock.open.trianglebadge.exclamationmark")
+          .font(.system(size: 56, weight: .semibold))
+          .foregroundStyle(.red)
+
+        VStack(spacing: 8) {
+          Text("Unbrick with \(request.displayName)?")
+            .font(.title2.weight(.semibold))
+            .multilineTextAlignment(.center)
+
+          Text("Take a breath before unlocking. Your Brick is doing its job.")
+            .font(.body)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+        }
+
+        Text(countdown > 0 ? "\(countdown)" : "Ready")
+          .font(.system(size: 44, weight: .bold, design: .rounded))
+          .monospacedDigit()
+          .foregroundStyle(countdown > 0 ? Color.secondary : Color.red)
+
+        Button {
+          onConfirm()
+          dismiss()
+        } label: {
+          Text(countdown > 0 ? "Wait \(countdown)s" : "Unbrick")
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.red)
+        .disabled(countdown > 0)
+
+        Button("Stay Bricked") {
+          onCancel()
+          dismiss()
+        }
+        .font(.headline)
+        .buttonStyle(.plain)
+      }
+      .padding(24)
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .navigationTitle("Confirm Unbrick")
+      .navigationBarTitleDisplayMode(.inline)
+      .task {
+        while countdown > 0 {
+          try? await Task.sleep(nanoseconds: 1_000_000_000)
+          countdown -= 1
+        }
+      }
+    }
+    .interactiveDismissDisabled()
   }
 }
 

@@ -18,6 +18,8 @@ final class BlockSessionModel: ObservableObject {
   @Published private(set) var statusMessage = "Brick manually, or scan a paired NFC key to start blocking."
   @Published private(set) var pairedKeys: [PairedNFCKey]
   @Published var pendingScannedKey: ScannedNFCKey?
+  @Published var pendingUnbrickRequest: PendingUnbrickRequest?
+  @Published private(set) var emergencyUnbricksRemaining: Int
   @Published var settings: BrickSettings {
     didSet {
       settings.clampDuration()
@@ -40,7 +42,7 @@ final class BlockSessionModel: ObservableObject {
   }
 
   var shouldAutoScanExistingKey: Bool {
-    !pairedKeys.isEmpty && pendingScannedKey == nil
+    !pairedKeys.isEmpty && pendingScannedKey == nil && pendingUnbrickRequest == nil
   }
 
   var remainingText: String {
@@ -70,6 +72,7 @@ final class BlockSessionModel: ObservableObject {
     self.settings = SettingsStore.load(defaults: defaults)
     self.selection = ActivitySelectionStore.load(defaults: defaults)
     self.pairedKeys = PairedNFCKeyStore.load(defaults: defaults)
+    self.emergencyUnbricksRemaining = defaults.object(forKey: BrickDefaults.emergencyUnbricksRemainingKey) as? Int ?? 5
   }
 
   func updateSelection(_ selection: FamilyActivitySelection) {
@@ -85,13 +88,19 @@ final class BlockSessionModel: ObservableObject {
 
   func handleKeyScan(_ scannedKey: ScannedNFCKey) async {
     guard let pairedKey = pairedKeys.first(where: { $0.id == scannedKey.id }) else {
+      if isBlocking {
+        statusMessage = "Unknown NFC key. Only an already-paired key can unbrick."
+        return
+      }
+
       pendingScannedKey = scannedKey
       statusMessage = "New NFC key detected. Confirm it before using it to brick."
       return
     }
 
     if isBlocking {
-      stopBlocking(reason: "Unblocked by \(pairedKey.displayName).")
+      pendingUnbrickRequest = PendingUnbrickRequest(id: pairedKey.id, displayName: pairedKey.displayName)
+      statusMessage = "\(pairedKey.displayName) scanned. Confirm unbrick to unlock."
     } else {
       statusMessage = "\(pairedKey.displayName) scanned. Starting block..."
       await startBlocking()
@@ -122,6 +131,31 @@ final class BlockSessionModel: ObservableObject {
     statusMessage = "NFC key was not added."
   }
 
+  func confirmPendingUnbrick() {
+    guard let pendingUnbrickRequest else {
+      return
+    }
+
+    let displayName = pendingUnbrickRequest.displayName
+    self.pendingUnbrickRequest = nil
+    stopBlocking(reason: "Unblocked by \(displayName).")
+  }
+
+  func cancelPendingUnbrick() {
+    pendingUnbrickRequest = nil
+    statusMessage = "Stayed bricked."
+  }
+
+  func useEmergencyUnbrick() {
+    guard isBlocking, emergencyUnbricksRemaining > 0 else {
+      return
+    }
+
+    emergencyUnbricksRemaining -= 1
+    defaults.set(emergencyUnbricksRemaining, forKey: BrickDefaults.emergencyUnbricksRemainingKey)
+    stopBlocking(reason: "Emergency unbrick used. \(emergencyUnbricksRemaining) left.")
+  }
+
   func requestAuthorization() async {
     do {
       try await authorizer.requestAuthorization()
@@ -146,7 +180,7 @@ final class BlockSessionModel: ObservableObject {
       activeSession = session
       saveSession(session)
       startTimer()
-      statusMessage = "Blocking \(settings.targetName) until \(session.endsAt.formatted(date: .omitted, time: .shortened))."
+      statusMessage = "Blocking \(settings.targetName) until \(session.endsAt.formatted(date: .omitted, time: .shortened)). Put your phone down."
     } catch {
       statusMessage = error.localizedDescription
     }
