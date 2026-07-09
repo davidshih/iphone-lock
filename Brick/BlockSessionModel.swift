@@ -35,6 +35,10 @@ final class BlockSessionModel: ObservableObject {
     activeSession != nil
   }
 
+  var hasSelection: Bool {
+    !selection.isEmpty
+  }
+
   var remainingText: String {
     guard let endsAt = activeSession?.endsAt else {
       return "Not blocking"
@@ -76,15 +80,16 @@ final class BlockSessionModel: ObservableObject {
   }
 
   func handleKeyScan(_ scannedKey: ScannedNFCKey) async {
-    guard pairedKeys.contains(where: { $0.id == scannedKey.id }) else {
+    guard let pairedKey = pairedKeys.first(where: { $0.id == scannedKey.id }) else {
       pendingScannedKey = scannedKey
       statusMessage = "New NFC key detected. Confirm it before using it to brick."
       return
     }
 
     if isBlocking {
-      stopBlocking(reason: "Unblocked by NFC key.")
+      stopBlocking(reason: "Unblocked by \(pairedKey.displayName).")
     } else {
+      statusMessage = "\(pairedKey.displayName) scanned. Starting block..."
       await startBlocking()
     }
   }

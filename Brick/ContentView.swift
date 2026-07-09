@@ -8,7 +8,7 @@ struct ContentView: View {
 
   var body: some View {
     TabView {
-      HomeView(scanner: scanner)
+      HomeView(scanner: scanner, isPickerPresented: $isPickerPresented)
         .environmentObject(model)
         .tabItem {
           Label("Brick", systemImage: "lock.fill")
@@ -51,6 +51,7 @@ struct ContentView: View {
 private struct HomeView: View {
   @EnvironmentObject private var model: BlockSessionModel
   @ObservedObject var scanner: NFCCardScanner
+  @Binding var isPickerPresented: Bool
 
   var body: some View {
     NavigationStack {
@@ -61,6 +62,8 @@ private struct HomeView: View {
         lockMark
         statusCopy
         pairedKeySummary
+        statusPanel
+        setupAction
         primaryAction
         helperCopy
 
@@ -153,6 +156,34 @@ private struct HomeView: View {
     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
   }
 
+  private var statusPanel: some View {
+    Text(model.statusMessage)
+      .font(.footnote)
+      .foregroundStyle(.secondary)
+      .multilineTextAlignment(.leading)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(14)
+      .background(Color(.secondarySystemGroupedBackground))
+      .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+  }
+
+  @ViewBuilder
+  private var setupAction: some View {
+    if !model.hasSelection {
+      Button {
+        isPickerPresented = true
+      } label: {
+        Label("Choose Apps and Websites", systemImage: "checklist")
+          .font(.headline)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 12)
+      }
+      .buttonStyle(.bordered)
+      .tint(.black)
+      .accessibilityIdentifier("chooseAppsHomeButton")
+    }
+  }
+
   private var primaryAction: some View {
     Button {
       if model.isBlocking {
@@ -174,11 +205,23 @@ private struct HomeView: View {
   }
 
   private var helperCopy: some View {
-    Text(scanner.isAvailable ? "Paired NFC keys also start or stop blocking automatically." : "NFC scanning is unavailable on this device.")
+    Text(helperText)
       .font(.footnote)
       .foregroundStyle(.secondary)
       .multilineTextAlignment(.center)
       .padding(.horizontal, 12)
+  }
+
+  private var helperText: String {
+    if !scanner.isAvailable {
+      return "NFC scanning is unavailable on this device."
+    }
+
+    if !model.hasSelection {
+      return "Pick apps or websites before Brick Now or NFC scan can start a block."
+    }
+
+    return "Paired NFC keys also start or stop blocking automatically."
   }
 
   private var durationText: String {

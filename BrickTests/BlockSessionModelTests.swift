@@ -37,6 +37,7 @@ final class BlockSessionModelTests: XCTestCase {
 
     XCTAssertTrue(model.isBlocking)
     XCTAssertEqual(shieldService.applyCount, 1)
+    XCTAssertTrue(model.statusMessage.contains("Blocking Reddit"))
   }
 
   func testPairedKeyStopsActiveBlock() async {
@@ -50,6 +51,7 @@ final class BlockSessionModelTests: XCTestCase {
 
     XCTAssertFalse(model.isBlocking)
     XCTAssertEqual(shieldService.clearCount, 1)
+    XCTAssertEqual(model.statusMessage, "Unblocked by Seed YubiKey.")
   }
 
   func testForgottenKeyBecomesPendingAgain() async {
