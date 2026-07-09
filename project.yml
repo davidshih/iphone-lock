@@ -32,6 +32,21 @@ targets:
         com.apple.developer.nfc.readersession.formats:
           - NDEF
           - TAG
+  BrickPreview:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - Brick
+      - BrickCore
+    settings:
+      base:
+        PRODUCT_NAME: Brick
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidshih.brick.preview
+        INFOPLIST_FILE: Brick/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   BrickTests:
     type: bundle.unit-test
     platform: iOS

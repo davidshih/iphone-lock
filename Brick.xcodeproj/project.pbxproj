@@ -7,13 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		07B0E2C9BE83787BDED61F13 /* BrickSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8599FD3DB2C48EE04D4C74FF /* BrickSettings.swift */; };
 		15C653ED14066234B272D864 /* BrickSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBDB0E05903E849B173F1C09 /* BrickSettingsTests.swift */; };
 		2CBD62A65D1DF3DA0CE305A8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FC1994AD231DDF4EDAEFF15 /* Assets.xcassets */; };
+		39E2EC5C4EA96DF80659FEBE /* NFCCardScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4ED371E6477832AB14B83E /* NFCCardScanner.swift */; };
+		413EF0D32E98793E25F47EF2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96F33C8C5ACC0B1F44364963 /* ContentView.swift */; };
 		462519CC94E5A11D02E7A62F /* NFCCardScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F4ED371E6477832AB14B83E /* NFCCardScanner.swift */; };
 		4A35D8A71F11C00F2C08BA51 /* ScreenTimeShieldService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18CCC36314773E75197FAC1 /* ScreenTimeShieldService.swift */; };
 		7365D56938627D228C693A55 /* BlockSessionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF407772AC187118A816AE51 /* BlockSessionModel.swift */; };
 		8EC44400B28ED8ADBBB70EBD /* BrickSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8599FD3DB2C48EE04D4C74FF /* BrickSettings.swift */; };
 		94DD64FC69B7E318E67EF956 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96F33C8C5ACC0B1F44364963 /* ContentView.swift */; };
+		9B7FCA180FB72F25E71EEF9C /* BlockSessionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF407772AC187118A816AE51 /* BlockSessionModel.swift */; };
+		A3373F4EF35B8E75E9AEE79C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8FC1994AD231DDF4EDAEFF15 /* Assets.xcassets */; };
+		B0200BE222C448E81774CEAB /* ScreenTimeShieldService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A18CCC36314773E75197FAC1 /* ScreenTimeShieldService.swift */; };
+		DE9C60E202A1D9FEBBE121AB /* BrickApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02BF1B84BAC3F27089CFC2A0 /* BrickApp.swift */; };
 		F4DEFA130B77A6A10E13FAB1 /* BrickApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02BF1B84BAC3F27089CFC2A0 /* BrickApp.swift */; };
 /* End PBXBuildFile section */
 
@@ -30,6 +37,7 @@
 /* Begin PBXFileReference section */
 		02BF1B84BAC3F27089CFC2A0 /* BrickApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickApp.swift; sourceTree = "<group>"; };
 		48191F6E9D7314CFB80297B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		830DFB6FA98474224DD2F8A9 /* BrickPreview.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BrickPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8599FD3DB2C48EE04D4C74FF /* BrickSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickSettings.swift; sourceTree = "<group>"; };
 		8FC1994AD231DDF4EDAEFF15 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		96F33C8C5ACC0B1F44364963 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -55,6 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				B41B092FA54E265C0FCC0BF1 /* Brick.app */,
+				830DFB6FA98474224DD2F8A9 /* BrickPreview.app */,
 				B79C791D84678FEB18D0B48A /* BrickTests.xctest */,
 			);
 			name = Products;
@@ -114,6 +123,24 @@
 			productReference = B41B092FA54E265C0FCC0BF1 /* Brick.app */;
 			productType = "com.apple.product-type.application";
 		};
+		BD4120AAD4519D7CFB382636 /* BrickPreview */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0B210BE25E5DEBB1A2196A18 /* Build configuration list for PBXNativeTarget "BrickPreview" */;
+			buildPhases = (
+				96D5EF81F6632B4724110E4D /* Sources */,
+				4228271AAB11B21F95C37844 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BrickPreview;
+			packageProductDependencies = (
+			);
+			productName = BrickPreview;
+			productReference = 830DFB6FA98474224DD2F8A9 /* BrickPreview.app */;
+			productType = "com.apple.product-type.application";
+		};
 		EC5D515F0F2BBF5F9F2E2F86 /* BrickTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 811CA76991187F619B5C9450 /* Build configuration list for PBXNativeTarget "BrickTests" */;
@@ -144,6 +171,9 @@
 					3C7F23EB15690F148AD66920 = {
 						DevelopmentTeam = "";
 					};
+					BD4120AAD4519D7CFB382636 = {
+						DevelopmentTeam = "";
+					};
 					EC5D515F0F2BBF5F9F2E2F86 = {
 						DevelopmentTeam = "";
 					};
@@ -164,12 +194,21 @@
 			projectRoot = "";
 			targets = (
 				3C7F23EB15690F148AD66920 /* Brick */,
+				BD4120AAD4519D7CFB382636 /* BrickPreview */,
 				EC5D515F0F2BBF5F9F2E2F86 /* BrickTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4228271AAB11B21F95C37844 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A3373F4EF35B8E75E9AEE79C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		87800B270ED5B1B606E94D48 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -186,6 +225,19 @@
 			buildActionMask = 2147483647;
 			files = (
 				15C653ED14066234B272D864 /* BrickSettingsTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		96D5EF81F6632B4724110E4D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9B7FCA180FB72F25E71EEF9C /* BlockSessionModel.swift in Sources */,
+				DE9C60E202A1D9FEBBE121AB /* BrickApp.swift in Sources */,
+				07B0E2C9BE83787BDED61F13 /* BrickSettings.swift in Sources */,
+				413EF0D32E98793E25F47EF2 /* ContentView.swift in Sources */,
+				39E2EC5C4EA96DF80659FEBE /* NFCCardScanner.swift in Sources */,
+				B0200BE222C448E81774CEAB /* ScreenTimeShieldService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -213,6 +265,25 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		1607ADFBB82E58A1E5088AA8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Brick/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.davidshih.brick.preview;
+				PRODUCT_NAME = Brick;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
 		47A3A323D20D34DB6D372DB5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -394,6 +465,25 @@
 			};
 			name = Debug;
 		};
+		C634E666BEB4964278AD3750 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Brick/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.davidshih.brick.preview;
+				PRODUCT_NAME = Brick;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 		F09856270AB06A00524DB369 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -415,6 +505,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		0B210BE25E5DEBB1A2196A18 /* Build configuration list for PBXNativeTarget "BrickPreview" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1607ADFBB82E58A1E5088AA8 /* Debug */,
+				C634E666BEB4964278AD3750 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		7DADC8C148AC0847C8086068 /* Build configuration list for PBXProject "Brick" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
