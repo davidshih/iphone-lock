@@ -1,0 +1,40 @@
+name: Brick
+options:
+  bundleIdPrefix: com.davidshih
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    MARKETING_VERSION: "0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: ""
+targets:
+  Brick:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - Brick
+      - BrickCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidshih.brick
+        INFOPLIST_FILE: Brick/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Brick/Brick.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"
+    entitlements:
+      path: Brick/Brick.entitlements
+  BrickTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - BrickTests
+    dependencies:
+      - target: Brick
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.davidshih.brick.tests
+        GENERATE_INFOPLIST_FILE: YES
