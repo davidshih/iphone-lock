@@ -82,16 +82,6 @@ public struct ScannedNFCKey: Equatable, Identifiable {
   }
 }
 
-public struct PendingUnbrickRequest: Equatable, Identifiable {
-  public let id: String
-  public let displayName: String
-
-  public init(id: String, displayName: String) {
-    self.id = id
-    self.displayName = displayName
-  }
-}
-
 public enum BrickDefaults {
   public static let settingsKey = "brick.settings"
   public static let selectionKey = "brick.familyActivitySelection"

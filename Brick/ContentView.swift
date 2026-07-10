@@ -38,17 +38,6 @@ struct ContentView: View {
         }
       )
     }
-    .sheet(item: $model.pendingUnbrickRequest) { request in
-      ConfirmUnbrickSheet(
-        request: request,
-        onConfirm: {
-          model.confirmPendingUnbrick()
-        },
-        onCancel: {
-          model.cancelPendingUnbrick()
-        }
-      )
-    }
     .onAppear {
       scanner.onKeyScanned = { scannedKey, purpose in
         Task {
@@ -601,72 +590,6 @@ private struct AddNFCKeySheet: View {
         }
       }
     }
-  }
-}
-
-private struct ConfirmUnbrickSheet: View {
-  let request: PendingUnbrickRequest
-  let onConfirm: () -> Void
-  let onCancel: () -> Void
-
-  @Environment(\.dismiss) private var dismiss
-  @State private var countdown = 5
-
-  var body: some View {
-    NavigationStack {
-      VStack(spacing: 24) {
-        Image(systemName: "lock.open.trianglebadge.exclamationmark")
-          .font(.system(size: 56, weight: .semibold))
-          .foregroundStyle(.red)
-
-        VStack(spacing: 8) {
-          Text("Unbrick with \(request.displayName)?")
-            .font(.title2.weight(.semibold))
-            .multilineTextAlignment(.center)
-
-          Text("Take a breath before unlocking. Your Brick is doing its job.")
-            .font(.body)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
-        }
-
-        Text(countdown > 0 ? "\(countdown)" : "Ready")
-          .font(.system(size: 44, weight: .bold, design: .rounded))
-          .monospacedDigit()
-          .foregroundStyle(countdown > 0 ? Color.secondary : Color.red)
-
-        Button {
-          onConfirm()
-          dismiss()
-        } label: {
-          Text(countdown > 0 ? "Wait \(countdown)s" : "Unbrick")
-            .font(.headline)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(.red)
-        .disabled(countdown > 0)
-
-        Button("Stay Bricked") {
-          onCancel()
-          dismiss()
-        }
-        .font(.headline)
-        .buttonStyle(.plain)
-      }
-      .padding(24)
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .navigationTitle("Confirm Unbrick")
-      .navigationBarTitleDisplayMode(.inline)
-      .task {
-        while countdown > 0 {
-          try? await Task.sleep(nanoseconds: 1_000_000_000)
-          countdown -= 1
-        }
-      }
-    }
-    .interactiveDismissDisabled()
   }
 }
 

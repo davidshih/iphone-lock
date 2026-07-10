@@ -19,7 +19,6 @@ final class BlockSessionModel: ObservableObject {
   @Published private(set) var statusMessage = "Brick manually, or scan a paired NFC key to start blocking."
   @Published private(set) var pairedKeys: [PairedNFCKey]
   @Published var pendingScannedKey: ScannedNFCKey?
-  @Published var pendingUnbrickRequest: PendingUnbrickRequest?
   @Published private(set) var emergencyUnbricksRemaining: Int
   @Published private(set) var scheduledStartAt: Date?
   @Published var settings: BrickSettings {
@@ -105,8 +104,7 @@ final class BlockSessionModel: ObservableObject {
     }
 
     if isBlocking {
-      pendingUnbrickRequest = PendingUnbrickRequest(id: pairedKey.id, displayName: pairedKey.displayName)
-      statusMessage = "\(pairedKey.displayName) scanned. Confirm unbrick to unlock."
+      stopBlocking(reason: "Unblocked by \(pairedKey.displayName).")
     } else {
       statusMessage = "\(pairedKey.displayName) scanned. Starting block..."
       await startBlocking()
@@ -135,21 +133,6 @@ final class BlockSessionModel: ObservableObject {
   func cancelPendingKey() {
     pendingScannedKey = nil
     statusMessage = "NFC key was not added."
-  }
-
-  func confirmPendingUnbrick() {
-    guard let pendingUnbrickRequest else {
-      return
-    }
-
-    let displayName = pendingUnbrickRequest.displayName
-    self.pendingUnbrickRequest = nil
-    stopBlocking(reason: "Unblocked by \(displayName).")
-  }
-
-  func cancelPendingUnbrick() {
-    pendingUnbrickRequest = nil
-    statusMessage = "Stayed bricked."
   }
 
   func useEmergencyUnbrick() {
