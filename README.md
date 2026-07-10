@@ -95,6 +95,7 @@ xcodebuild build \
 
 ## 文件
 
+- [2026-07-10 交付紀錄](changelog-2026-07-10.html)
 - [2026-07-09 changelog](changelog-2026-07-09.html)
 - [改善計畫](improvement-plan.html)
 - [首頁 UI redesign 紀錄](ui-redesign-plan.html)

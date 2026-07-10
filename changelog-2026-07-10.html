@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Brick 交付紀錄 — 2026-07-10</title>
+<style>
+  :root {
+    --bg: #0b0b0c;
+    --surface: #171719;
+    --surface-strong: #202023;
+    --border: #303034;
+    --text: #f5f5f7;
+    --muted: #a4a4aa;
+    --green: #32d74b;
+    --blue: #64d2ff;
+    --orange: #ff9f0a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px 20px 72px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif;
+    line-height: 1.7;
+  }
+  .wrap { width: min(880px, 100%); margin: 0 auto; }
+  header { text-align: center; margin-bottom: 42px; }
+  h1 { margin: 0; font-size: clamp(28px, 6vw, 40px); letter-spacing: .02em; }
+  header p { margin: 10px auto 0; color: var(--muted); max-width: 680px; }
+  .badge {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 8px 16px;
+    border: 1px solid rgba(50, 215, 75, .32);
+    border-radius: 999px;
+    background: rgba(50, 215, 75, .12);
+    color: var(--green);
+    font-size: 13px;
+    font-weight: 750;
+  }
+  h2 {
+    margin: 38px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 20px;
+  }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .card {
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+  }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; }
+  .metric { text-align: center; background: var(--surface-strong); }
+  .metric strong { display: block; color: var(--green); font-size: 28px; line-height: 1.2; }
+  .metric span { color: var(--muted); font-size: 12px; }
+  ul { margin: 0; padding-left: 20px; color: var(--muted); }
+  li + li { margin-top: 7px; }
+  code {
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: #000;
+    color: #d8d8dc;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-size: .9em;
+  }
+  a { color: var(--blue); }
+  .installed { color: var(--green); font-weight: 700; }
+  footer { margin-top: 48px; color: var(--muted); text-align: center; font-size: 12px; }
+  @media (max-width: 640px) {
+    body { padding-top: 32px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>🧱 Brick 交付紀錄</h1>
+    <p>2026-07-10 — 修正排程生命週期、強化 Emergency 次數保存，並建立可交接的文件基線。</p>
+    <div class="badge">✅ 驗證完成 · Signed Release 已安裝至 iPhone12P</div>
+  </header>
+
+  <section aria-labelledby="outcome-title">
+    <h2 id="outcome-title">本輪結果</h2>
+    <div class="grid">
+      <div class="card metric"><strong>18/18</strong><span>iOS regression tests</span></div>
+      <div class="card metric"><strong>4/4</strong><span>BrickCore package tests</span></div>
+      <div class="card metric"><strong>PASS</strong><span>Release no-sign build</span></div>
+      <div class="card metric"><strong>0</strong><span>Release manual-stop strings</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="changes-title">
+    <h2 id="changes-title">已完成改善</h2>
+    <div class="grid">
+      <article class="card">
+        <h3>排程重啟恢復</h3>
+        <p>App 在 Auto-brick 到期前重啟時，會重新建立 schedule timer，不再只顯示倒數卻無法觸發。</p>
+      </article>
+      <article class="card">
+        <h3>Calendar 時間計算</h3>
+        <p>用 <code>Calendar.nextDate</code> 取代固定加 86,400 秒，正確處理過去時間、跨日與 DST。</p>
+      </article>
+      <article class="card">
+        <h3>Emergency 搬進 Keychain</h3>
+        <p>剩餘次數改由 Keychain 保存，包含舊版 UserDefaults migration、範圍校正與寫入失敗 fallback。</p>
+      </article>
+      <article class="card">
+        <h3>文件成為可用入口</h3>
+        <p>README 現在包含 setup、驗證、架構、資料保存與限制；舊 HTML 的矛盾敘述也已校正。</p>
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="verification-title">
+    <h2 id="verification-title">驗證紀錄</h2>
+    <div class="card">
+      <ul>
+        <li><code>swift test</code>：BrickCore 4/4 通過。</li>
+        <li><code>xcodebuild test</code>：iPhone 17 simulator、iOS 26.5，18/18 通過。</li>
+        <li>Release generic iOS no-sign build 成功。</li>
+        <li>Release binary 未包含 <code>Manual Stop (Debug)</code> 或 <code>End Block Now (Debug)</code>。</li>
+        <li>Commit <code>752281f</code> 已 push 至 <code>origin/main</code>。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="deployment-title">
+    <h2 id="deployment-title">實機部署</h2>
+    <div class="card">
+      <p><span class="installed">安裝成功。</span>2026-07-10 10:44 ET 使用 team <code>B3Z4L27DS7</code> 完成 signed Release build，並透過 <code>devicectl</code> 安裝到 iPhone12P（iPhone 12 Pro）。自動啟動時裝置仍鎖定，因此需解鎖後再開啟 Brick。</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="limits-title">
+    <h2 id="limits-title">仍待處理</h2>
+    <div class="card">
+      <ul>
+        <li>DeviceActivity monitor extension：app 被終止時準時開始與結束 shield。</li>
+        <li>無限期模式：鎖到刷卡為止。</li>
+        <li>NDEF universal link 背景喚醒。</li>
+        <li>移除裝飾性 <code>targetName</code>，改由 selection 生成摘要。</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    Brick · changelog-2026-07-10.html · <a href="README.md">README</a> · <a href="improvement-plan.html">改善計畫</a>
+  </footer>
+</main>
+</body>
+</html>
