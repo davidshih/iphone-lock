@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brick 更新紀錄 — 2026-07-09</title>
+<style>
+  :root {
+    --bg: #0d0d0d; --card: #1a1a1a; --border: #2c2c2c;
+    --text: #f2f2f2; --muted: #9a9a9a;
+    --green: #34c759; --red: #ff453a; --blue: #64d2ff; --orange: #ff9f0a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+    line-height: 1.7; padding: 48px 20px 80px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 44px; }
+  h1 { font-size: 30px; }
+  header p { color: var(--muted); margin-top: 8px; }
+  .banner {
+    display: inline-block; margin-top: 12px; padding: 8px 18px; border-radius: 99px;
+    font-size: 13px; font-weight: 700; background: rgba(52,199,89,.15); color: var(--green);
+  }
+  h2 { font-size: 20px; margin: 42px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; }
+  .card h3 { font-size: 16px; margin-bottom: 6px; }
+  .card p, li { color: var(--muted); font-size: 14px; }
+  ul { padding-left: 20px; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; background: #000; padding: 1px 6px; border-radius: 4px; color: #d0d0d0; }
+  .hash { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--blue); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-size: 12px; }
+  .ok { color: var(--green); font-weight: 700; }
+  .no { color: var(--red); font-weight: 700; }
+  .flow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+  .step { border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; font-size: 13px; color: var(--muted); }
+  .step b { color: var(--text); }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 52px; }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🧱 Brick 更新紀錄</h1>
+  <p>2026-07-09 開發週期總結 — 六個 commit，從「處處後門」到「一顆綠紅大圓 + 原生時間選擇器」。</p>
+  <div class="banner">✅ 本週期已收尾 · 測試 14/14 綠 · 已部署 iPhone12P</div>
+</header>
+
+<h2>本週期 Commits</h2>
+<table>
+  <tr><th>Commit</th><th>內容</th></tr>
+  <tr><td class="hash">6e2e9d0</td><td><b>NFC UX 修復 + 定時上鎖</b> — 移除回前景自動掃 NFC（根治鎖定中無限掃迴圈）；掃卡結果延後 0.4s 派送，修好 NFC 面板收合後 sheet 被靜默丟掉的問題；新增首頁時長快選與「N 分鐘後自動上鎖」排程（本地通知提醒）。</td></tr>
+  <tr><td class="hash">17cccb1</td><td><b>鎖頭可點 + 掃卡意圖分離</b> — 大鎖頭變成按鈕（點了上鎖/叫掃卡）；新增 <code>ScanPurpose</code>：首頁掃卡不再誤開「加新卡」視窗，配對一律走 Settings → Add NFC Key；首次使用（無任何 key）仍可從首頁配對。</td></tr>
+  <tr><td class="hash">a5fa83f</td><td><b>刷卡即解鎖</b> — 砍掉 5 秒冷靜倒數確認 sheet（+1/−125 行）。實體鑰匙即摩擦力，UI 不疊儀式；解鎖路徑不再依賴任何可能 silent fail 的 sheet presentation。冷靜機制只留在 Emergency Unbrick。</td></tr>
+  <tr><td class="hash">403aa7b</td><td><b>Random UID 卡攔截 + ID 透明化</b> — EMV 類卡（4-byte UID 首 byte 0x08）掃描當場拒絕並說明原因；所有 unknown key 訊息顯示 12 碼 short ID，可與 Settings 配對清單直接比對。</td></tr>
+  <tr><td class="hash">0f6b865</td><td><b>首頁 redesign</b> — 一顆會變色的大圓就是整個 app：綠圓 🔓 點了立即上鎖、紅圓 🔒 點了掃卡解鎖，掃描中圓上顯示轉圈。砍掉狀態膠囊、Brick Now 大按鈕、key 大卡片；key 數量縮成 toolbar 小 chip，狀態訊息降為置底小字。</td></tr>
+  <tr><td class="hash">165d071</td><td><b>原生時間選擇器</b> — 自製時間 chips（實機點擊閃退）整排移除：Block for 改原生 menu picker（15m–8h）；Auto-brick at 改系統緊湊時間選擇器（iPhone 鬧鐘同款滾輪，過去時間自動視為明天）。</td></tr>
+</table>
+
+<h2>現在的使用流程</h2>
+<div class="flow">
+  <div class="step">🟢 <b>綠圓</b>：點一下立即上鎖</div>
+  <div class="step">⏱ <b>Block for</b>：menu 選時長</div>
+  <div class="step">⏰ <b>Auto-brick at</b>：滾輪選定時上鎖</div>
+  <div class="step">🔴 <b>紅圓</b>：點一下掃卡解鎖</div>
+  <div class="step">🆘 <b>Emergency</b>：Settings 內，限 5 次</div>
+</div>
+<div class="card" style="margin-top:14px;">
+  <p>解鎖唯二路徑：刷<b>已配對</b>的 NFC key（即時解鎖、無確認步驟），或消耗一次 Emergency Unbrick。Release build 無任何手動停止後門（Debug build 保留 <code>Manual Stop (Debug)</code> 供測試）。</p>
+</div>
+
+<h2>NFC 卡種相容性（實機驗證）</h2>
+<table>
+  <tr><th>卡種</th><th>可用</th><th>原因</th></tr>
+  <tr><td>EasyCard 悠遊卡（MIFARE）</td><td class="ok">✅ 可用</td><td>UID 固定，配對/解鎖穩定</td></tr>
+  <tr><td>一般 NFC tag / NTAG 貼紙 / 門禁卡</td><td class="ok">✅ 可用</td><td>UID 固定</td></tr>
+  <tr><td>YubiKey / Titan Key（ISO 7816）</td><td class="no">❌ 不可用</td><td>每次 tap 回報新 identifier，永遠配不回來</td></tr>
+  <tr><td>信用卡 / 金融卡（EMV）</td><td class="no">❌ 不可用</td><td>規範性 random UID（首 byte 0x08），app 已主動攔截並提示</td></tr>
+</table>
+
+<h2>驗證與部署</h2>
+<div class="card">
+  <ul>
+    <li>單元測試：<code>xcodebuild test</code>（iPhone 17 Pro simulator）<b>14/14 全綠</b>，涵蓋掃卡意圖分離、blocking 中拒絕配對、排程上鎖/取消、random UID 偵測。</li>
+    <li>Release build：<b>SUCCEEDED</b>（確認 Debug 後門按鈕正確排除）。</li>
+    <li>實機：iPhone12P（team <code>B3Z4L27DS7</code>），六輪皆以 <code>devicectl</code> 部署，最終版已安裝。</li>
+    <li>全數 commit 已 push 至 <code>origin/main</code>（<a href="https://github.com/davidshih/iphone-lock">github.com/davidshih/iphone-lock</a>）。</li>
+  </ul>
+</div>
+
+<h2>下一輪 Roadmap（未動工）</h2>
+<div class="card">
+  <ul>
+    <li><b>P1 無限期模式</b> — 「鎖到刷卡為止」，getbrick 的本命模式（目前上限 8h）。</li>
+    <li><b>P1 DeviceActivity 自動到期</b> — app 被殺掉時 shield 到點自動解除（目前靠下次開 app 補處理）。</li>
+    <li><b>P1 Emergency 次數搬 Keychain</b> — 現在放 UserDefaults，刪 app 重裝會回滿。</li>
+    <li><b>P2 NDEF 背景喚醒</b> — tag 寫 universal link，碰手機直接拉起 app。</li>
+    <li><b>P2 移除裝飾性 targetName</b> — 從 selection 自動生成顯示名稱。</li>
+  </ul>
+  <p style="margin-top:8px;">詳見 <a href="improvement-plan.html">improvement-plan.html</a> 與 <a href="ui-redesign-plan.html">ui-redesign-plan.html</a>。</p>
+</div>
+
+<footer>Brick · changelog-2026-07-09.html · 6 commits · 6e2e9d0…165d071</footer>
+</div>
+</body>
+</html>
