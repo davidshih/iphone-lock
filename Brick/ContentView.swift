@@ -52,6 +52,7 @@ private struct HomeView: View {
   @EnvironmentObject private var model: BlockSessionModel
   @ObservedObject var scanner: NFCCardScanner
   @Binding var isPickerPresented: Bool
+  @State private var scheduleTime = Date().addingTimeInterval(15 * 60)
 
   var body: some View {
     NavigationStack {
@@ -61,7 +62,7 @@ private struct HomeView: View {
         lockMark
         statusHeading
         setupAction
-        durationPresetChips
+        durationPicker
         scheduledLockSection
 
         Spacer(minLength: 12)
@@ -171,75 +172,104 @@ private struct HomeView: View {
     }
   }
 
-  private static let durationPresets = [30, 60, 120, 240]
+  private static let durationOptions = [15, 30, 45, 60, 90, 120, 180, 240, 360, 480]
 
-  @ViewBuilder
-  private var durationPresetChips: some View {
-    if !model.isBlocking {
-      HStack(spacing: 8) {
-        ForEach(Self.durationPresets, id: \.self) { minutes in
-          Button {
-            model.settings.durationMinutes = minutes
-          } label: {
-            Text(Self.chipText(minutes: minutes))
-              .font(.subheadline.weight(.semibold))
-              .frame(maxWidth: .infinity)
-              .padding(.vertical, 10)
-          }
-          .buttonStyle(.bordered)
-          .tint(model.settings.durationMinutes == minutes ? .black : .secondary)
-        }
-      }
-    }
+  // Settings 的 stepper 可調出不在清單裡的值（如 75m），併進來避免 Picker 對不到 tag 顯示空白
+  private var durationOptions: [Int] {
+    Self.durationOptions.contains(model.settings.durationMinutes)
+      ? Self.durationOptions
+      : (Self.durationOptions + [model.settings.durationMinutes]).sorted()
   }
 
-  private static func chipText(minutes: Int) -> String {
-    minutes % 60 == 0 ? "\(minutes / 60)h" : "\(minutes)m"
+  @ViewBuilder
+  private var durationPicker: some View {
+    if !model.isBlocking {
+      HStack {
+        Text("Block for")
+          .font(.subheadline.weight(.semibold))
+
+        Spacer()
+
+        Picker("Block for", selection: Binding(
+          get: { model.settings.durationMinutes },
+          set: { model.settings.durationMinutes = $0 }
+        )) {
+          ForEach(durationOptions, id: \.self) { minutes in
+            Text(Self.durationLabel(minutes: minutes)).tag(minutes)
+          }
+        }
+        .pickerStyle(.menu)
+        .tint(.primary)
+      }
+      .padding(.horizontal, 14)
+      .padding(.vertical, 8)
+      .background(Color(.secondarySystemGroupedBackground))
+      .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
   }
 
   @ViewBuilder
   private var scheduledLockSection: some View {
     if !model.isBlocking {
-      VStack(alignment: .leading, spacing: 10) {
+      HStack {
         if let scheduledStartAt = model.scheduledStartAt {
           TimelineView(.periodic(from: .now, by: 1)) { context in
             Text("Bricking in \(Self.countdownText(until: scheduledStartAt, now: context.date))")
               .font(.subheadline.weight(.semibold))
           }
 
-          Button("Cancel Schedule", role: .destructive) {
+          Spacer()
+
+          Button("Cancel", role: .destructive) {
             model.cancelScheduledLock()
           }
-          .font(.footnote.weight(.semibold))
+          .font(.subheadline.weight(.semibold))
           .buttonStyle(.plain)
           .foregroundStyle(Color.red)
         } else {
-          Text("Schedule a brick")
+          Text("Auto-brick at")
             .font(.subheadline.weight(.semibold))
 
-          HStack(spacing: 8) {
-            scheduleButton(label: "15m", seconds: 15 * 60)
-            scheduleButton(label: "30m", seconds: 30 * 60)
-            scheduleButton(label: "1h", seconds: 60 * 60)
+          Spacer()
+
+          DatePicker(
+            "Auto-brick at",
+            selection: $scheduleTime,
+            displayedComponents: .hourAndMinute
+          )
+          .labelsHidden()
+
+          Button("Set") {
+            let interval = scheduleTime.timeIntervalSinceNow
+            // 選到已過去的時間 = 明天的那個時間（鬧鐘語意）
+            model.scheduleLock(after: interval > 0 ? interval : interval + 86_400)
           }
+          .font(.subheadline.weight(.semibold))
+          .buttonStyle(.bordered)
+          .tint(.black)
         }
       }
-      .padding(14)
+      .padding(.horizontal, 14)
+      .padding(.vertical, 8)
       .frame(maxWidth: .infinity, alignment: .leading)
       .background(Color(.secondarySystemGroupedBackground))
       .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
   }
 
-  private func scheduleButton(label: String, seconds: TimeInterval) -> some View {
-    Button(label) {
-      model.scheduleLock(after: seconds)
+  private static func durationLabel(minutes: Int) -> String {
+    let hours = minutes / 60
+    let remainder = minutes % 60
+
+    if hours > 0 && remainder > 0 {
+      return "\(hours)h \(remainder)m"
     }
-    .font(.subheadline.weight(.semibold))
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 8)
-    .buttonStyle(.bordered)
-    .tint(.black)
+
+    if hours > 0 {
+      return "\(hours)h"
+    }
+
+    return "\(remainder)m"
   }
 
   private static func countdownText(until date: Date, now: Date) -> String {
