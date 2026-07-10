@@ -99,6 +99,7 @@ public enum BrickDefaults {
   public static let pairedCardIDKey = "brick.pairedCardID"
   public static let pairedNFCKeysKey = "brick.pairedNFCKeys"
   public static let emergencyUnbricksRemainingKey = "brick.emergencyUnbricksRemaining"
+  public static let scheduledStartKey = "brick.scheduledStart"
 }
 
 public enum SettingsStore {

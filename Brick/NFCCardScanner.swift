@@ -87,13 +87,24 @@ final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDeleg
         return
       }
 
-      let scannedKey = NFCFingerprint.scannedKey(from: tag)
+      guard let scannedKey = NFCFingerprint.scannedKey(from: tag) else {
+        session.invalidate(errorMessage: "This tag has no readable ID and can't be used as a Brick key.")
+        DispatchQueue.main.async {
+          self.isScanning = false
+          self.diagnosticLines.append("Tag rejected: no identifier bytes.")
+        }
+        return
+      }
+
       session.alertMessage = "Card scanned."
       session.invalidate()
 
       DispatchQueue.main.async {
         self.isScanning = false
         self.diagnosticLines.append("Card fingerprint saved: \(scannedKey.id.prefix(12))...")
+      }
+      // ponytail: 0.4s 是等 Core NFC 面板 dismiss 的經驗值；太快 SwiftUI sheet 會被靜默丟掉，偶發沒彈窗再往上調
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
         self.onKeyScanned?(scannedKey)
       }
     }
@@ -101,19 +112,20 @@ final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDeleg
 }
 
 enum NFCFingerprint {
-  static func cardID(from tag: NFCTag) -> String {
-    fingerprint(bytes: identifierBytes(from: tag))
-  }
+  static func scannedKey(from tag: NFCTag) -> ScannedNFCKey? {
+    let bytes = identifierBytes(from: tag)
+    // Empty identifiers all hash to the same fingerprint, making unrelated tags interchangeable.
+    guard !bytes.isEmpty else {
+      return nil
+    }
 
-  static func scannedKey(from tag: NFCTag) -> ScannedNFCKey {
-    let summary = summary(from: tag)
     let kind = inferredKind(from: tag)
 
     return ScannedNFCKey(
-      id: cardID(from: tag),
+      id: fingerprint(bytes: bytes),
       defaultName: kind.displayName,
       kind: kind,
-      detail: summary
+      detail: summary(from: tag)
     )
   }
 

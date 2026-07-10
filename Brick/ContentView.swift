@@ -2,7 +2,6 @@ import FamilyControls
 import SwiftUI
 
 struct ContentView: View {
-  @Environment(\.scenePhase) private var scenePhase
   @EnvironmentObject private var model: BlockSessionModel
   @StateObject private var scanner = NFCCardScanner()
   @State private var isPickerPresented = false
@@ -56,26 +55,7 @@ struct ContentView: View {
           await model.handleKeyScan(scannedKey)
         }
       }
-      startAutoScanIfNeeded(reason: "App opened. Auto scanning paired NFC keys.")
     }
-    .onChange(of: scenePhase) { _, phase in
-      guard phase == .active else {
-        return
-      }
-
-      startAutoScanIfNeeded(reason: "App became active. Auto scanning paired NFC keys.")
-    }
-  }
-
-  private func startAutoScanIfNeeded(reason: String) {
-    guard model.shouldAutoScanExistingKey,
-          scanner.isAvailable,
-          !scanner.isScanning
-    else {
-      return
-    }
-
-    scanner.beginScanning(reason: reason)
   }
 }
 
@@ -95,6 +75,8 @@ private struct HomeView: View {
         pairedKeySummary
         statusPanel
         setupAction
+        durationPresetChips
+        scheduledLockSection
         primaryAction
         smallManualStop
         helperCopy
@@ -214,6 +196,94 @@ private struct HomeView: View {
       .tint(.black)
       .accessibilityIdentifier("chooseAppsHomeButton")
     }
+  }
+
+  private static let durationPresets = [30, 60, 120, 240]
+
+  @ViewBuilder
+  private var durationPresetChips: some View {
+    if !model.isBlocking {
+      HStack(spacing: 8) {
+        ForEach(Self.durationPresets, id: \.self) { minutes in
+          Button {
+            model.settings.durationMinutes = minutes
+          } label: {
+            Text(Self.chipText(minutes: minutes))
+              .font(.subheadline.weight(.semibold))
+              .frame(maxWidth: .infinity)
+              .padding(.vertical, 10)
+          }
+          .buttonStyle(.bordered)
+          .tint(model.settings.durationMinutes == minutes ? .black : .secondary)
+        }
+      }
+    }
+  }
+
+  private static func chipText(minutes: Int) -> String {
+    minutes % 60 == 0 ? "\(minutes / 60)h" : "\(minutes)m"
+  }
+
+  @ViewBuilder
+  private var scheduledLockSection: some View {
+    if !model.isBlocking {
+      VStack(alignment: .leading, spacing: 10) {
+        if let scheduledStartAt = model.scheduledStartAt {
+          TimelineView(.periodic(from: .now, by: 1)) { context in
+            Text("Bricking in \(Self.countdownText(until: scheduledStartAt, now: context.date))")
+              .font(.subheadline.weight(.semibold))
+          }
+
+          Button("Cancel Schedule", role: .destructive) {
+            model.cancelScheduledLock()
+          }
+          .font(.footnote.weight(.semibold))
+          .buttonStyle(.plain)
+          .foregroundStyle(Color.red)
+        } else {
+          Text("Schedule a brick")
+            .font(.subheadline.weight(.semibold))
+
+          HStack(spacing: 8) {
+            scheduleButton(label: "15m", seconds: 15 * 60)
+            scheduleButton(label: "30m", seconds: 30 * 60)
+            scheduleButton(label: "1h", seconds: 60 * 60)
+          }
+        }
+      }
+      .padding(14)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(Color(.secondarySystemGroupedBackground))
+      .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+  }
+
+  private func scheduleButton(label: String, seconds: TimeInterval) -> some View {
+    Button(label) {
+      model.scheduleLock(after: seconds)
+    }
+    .font(.subheadline.weight(.semibold))
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, 8)
+    .buttonStyle(.bordered)
+    .tint(.black)
+  }
+
+  private static func countdownText(until date: Date, now: Date) -> String {
+    let remaining = max(0, Int(date.timeIntervalSince(now)))
+    let hours = remaining / 3600
+    let minutes = (remaining % 3600) / 60
+    let seconds = remaining % 60
+
+    if hours > 0 {
+      return "\(hours)h \(minutes)m"
+    }
+
+    if minutes > 0 {
+      return "\(minutes)m \(seconds)s"
+    }
+
+    return "\(seconds)s"
   }
 
   private var primaryAction: some View {

@@ -115,15 +115,29 @@ final class BlockSessionModelTests: XCTestCase {
     XCTAssertFalse(model.isBlocking)
   }
 
-  func testAutoScanRequiresPairedKeyAndNoPendingKey() async {
+  func testScheduleLockThenDueStartsBlock() async {
+    let shieldService = MockShieldService()
+    let model = makeModel(shieldService: shieldService)
+
+    model.scheduleLock(after: -1)
+    XCTAssertNotNil(model.scheduledStartAt)
+
+    await model.restoreSessionIfNeeded()
+
+    XCTAssertTrue(model.isBlocking)
+    XCTAssertNil(model.scheduledStartAt)
+  }
+
+  func testCancelScheduledLock() {
     let model = makeModel()
-    XCTAssertFalse(model.shouldAutoScanExistingKey)
 
-    model.addSeedKey(id: "known-key")
-    XCTAssertTrue(model.shouldAutoScanExistingKey)
+    model.scheduleLock(after: 15 * 60)
+    XCTAssertNotNil(model.scheduledStartAt)
 
-    await model.handleKeyScan(ScannedNFCKey(id: "new-key", defaultName: "Titan Key", kind: .titanKey, detail: "Tag type: ISO 7816"))
-    XCTAssertFalse(model.shouldAutoScanExistingKey)
+    model.cancelScheduledLock()
+
+    XCTAssertNil(model.scheduledStartAt)
+    XCTAssertFalse(model.isBlocking)
   }
 
   private func makeModel(

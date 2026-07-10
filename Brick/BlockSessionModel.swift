@@ -1,5 +1,6 @@
 import FamilyControls
 import Foundation
+import UserNotifications
 
 protocol ScreenTimeAuthorizing {
   func requestAuthorization() async throws
@@ -20,6 +21,7 @@ final class BlockSessionModel: ObservableObject {
   @Published var pendingScannedKey: ScannedNFCKey?
   @Published var pendingUnbrickRequest: PendingUnbrickRequest?
   @Published private(set) var emergencyUnbricksRemaining: Int
+  @Published private(set) var scheduledStartAt: Date?
   @Published var settings: BrickSettings {
     didSet {
       settings.clampDuration()
@@ -32,6 +34,7 @@ final class BlockSessionModel: ObservableObject {
   private let authorizer: ScreenTimeAuthorizing
   private let defaults: UserDefaults
   private var timer: Timer?
+  private var scheduleTimer: Timer?
 
   var isBlocking: Bool {
     activeSession != nil
@@ -39,10 +42,6 @@ final class BlockSessionModel: ObservableObject {
 
   var hasSelection: Bool {
     !selection.isEmpty
-  }
-
-  var shouldAutoScanExistingKey: Bool {
-    !pairedKeys.isEmpty && pendingScannedKey == nil && pendingUnbrickRequest == nil
   }
 
   var remainingText: String {
@@ -73,6 +72,7 @@ final class BlockSessionModel: ObservableObject {
     self.selection = ActivitySelectionStore.load(defaults: defaults)
     self.pairedKeys = PairedNFCKeyStore.load(defaults: defaults)
     self.emergencyUnbricksRemaining = defaults.object(forKey: BrickDefaults.emergencyUnbricksRemainingKey) as? Int ?? 5
+    self.scheduledStartAt = defaults.object(forKey: BrickDefaults.scheduledStartKey) as? Date
   }
 
   func updateSelection(_ selection: FamilyActivitySelection) {
@@ -180,10 +180,73 @@ final class BlockSessionModel: ObservableObject {
       activeSession = session
       saveSession(session)
       startTimer()
+      clearScheduledLock()
       statusMessage = "Blocking \(settings.targetName) until \(session.endsAt.formatted(date: .omitted, time: .shortened)). Put your phone down."
     } catch {
       statusMessage = error.localizedDescription
     }
+  }
+
+  func scheduleLock(after interval: TimeInterval) {
+    let startAt = Date().addingTimeInterval(interval)
+    scheduledStartAt = startAt
+    defaults.set(startAt, forKey: BrickDefaults.scheduledStartKey)
+    scheduleNotification(interval: interval)
+    startScheduleTimer()
+    statusMessage = "Scheduled to brick at \(startAt.formatted(date: .omitted, time: .shortened))."
+  }
+
+  func cancelScheduledLock() {
+    clearScheduledLock()
+    statusMessage = "Scheduled brick canceled."
+  }
+
+  private func clearScheduledLock() {
+    scheduledStartAt = nil
+    defaults.removeObject(forKey: BrickDefaults.scheduledStartKey)
+    scheduleTimer?.invalidate()
+    scheduleTimer = nil
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["brick.scheduledLock"])
+  }
+
+  private func startScheduleTimer() {
+    scheduleTimer?.invalidate()
+    scheduleTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+      Task { @MainActor in
+        await self?.fireScheduledLockIfDue()
+      }
+    }
+  }
+
+  private func fireScheduledLockIfDue() async {
+    guard let scheduledStartAt else {
+      return
+    }
+
+    if isBlocking {
+      clearScheduledLock()
+      return
+    }
+
+    guard Date() >= scheduledStartAt else {
+      return
+    }
+
+    clearScheduledLock()
+    await startBlocking()
+  }
+
+  // ponytail: app 前景在場即刻上鎖，否則下次開 app 補上鎖；通知負責提醒。真背景排程需 DeviceActivity extension（deferred，見 improvement-plan.html P1）
+  private func scheduleNotification(interval: TimeInterval) {
+    let center = UNUserNotificationCenter.current()
+    center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+
+    let content = UNMutableNotificationContent()
+    content.title = "Brick"
+    content.body = "Time to brick — open Brick to lock."
+    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(interval, 1), repeats: false)
+    let request = UNNotificationRequest(identifier: "brick.scheduledLock", content: content, trigger: trigger)
+    center.add(request)
   }
 
   func stopBlocking(reason: String = "Blocking ended.") {
@@ -200,11 +263,13 @@ final class BlockSessionModel: ObservableObject {
       let data = defaults.data(forKey: BrickDefaults.sessionKey),
       let session = try? JSONDecoder().decode(BlockSession.self, from: data)
     else {
+      await fireScheduledLockIfDue()
       return
     }
 
     if session.endsAt <= Date() {
       stopBlocking(reason: "Previous block expired.")
+      await fireScheduledLockIfDue()
       return
     }
 
@@ -216,6 +281,7 @@ final class BlockSessionModel: ObservableObject {
     } catch {
       statusMessage = error.localizedDescription
     }
+    await fireScheduledLockIfDue()
   }
 
   private func saveSession(_ session: BlockSession) {
