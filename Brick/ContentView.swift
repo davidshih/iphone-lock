@@ -50,9 +50,9 @@ struct ContentView: View {
       )
     }
     .onAppear {
-      scanner.onKeyScanned = { scannedKey in
+      scanner.onKeyScanned = { scannedKey, purpose in
         Task {
-          await model.handleKeyScan(scannedKey)
+          await model.handleKeyScan(scannedKey, purpose: purpose)
         }
       }
     }
@@ -121,16 +121,28 @@ private struct HomeView: View {
   }
 
   private var lockMark: some View {
-    ZStack {
-      Circle()
-        .fill(model.isBlocking ? Color.black : Color.white)
-        .shadow(color: .black.opacity(0.08), radius: 24, y: 12)
+    Button {
+      if model.isBlocking {
+        scanner.beginScanning(reason: "Manual unbrick scan requested.", purpose: .toggleBlock)
+      } else {
+        Task {
+          await model.startBlocking()
+        }
+      }
+    } label: {
+      ZStack {
+        Circle()
+          .fill(model.isBlocking ? Color.black : Color.white)
+          .shadow(color: .black.opacity(0.08), radius: 24, y: 12)
 
-      Image(systemName: model.isBlocking ? "lock.fill" : "lock.open.fill")
-        .font(.system(size: 58, weight: .semibold))
-        .foregroundStyle(model.isBlocking ? .white : .black)
+        Image(systemName: model.isBlocking ? "lock.fill" : "lock.open.fill")
+          .font(.system(size: 58, weight: .semibold))
+          .foregroundStyle(model.isBlocking ? .white : .black)
+      }
+      .frame(width: 160, height: 160)
     }
-    .frame(width: 160, height: 160)
+    .buttonStyle(.plain)
+    .accessibilityIdentifier("lockMarkButton")
   }
 
   private var statusCopy: some View {
@@ -289,7 +301,7 @@ private struct HomeView: View {
   private var primaryAction: some View {
     Button {
       if model.isBlocking {
-        scanner.beginScanning(reason: "Manual unbrick scan requested.")
+        scanner.beginScanning(reason: "Manual unbrick scan requested.", purpose: .toggleBlock)
       } else {
         Task {
           await model.startBlocking()
@@ -429,7 +441,7 @@ private struct SettingsView: View {
       }
 
       Button {
-        scanner.beginScanning()
+        scanner.beginScanning(reason: "Pairing a new NFC key.", purpose: .pairing)
       } label: {
         Label("Add NFC Key", systemImage: "plus.circle")
       }

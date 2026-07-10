@@ -140,6 +140,33 @@ final class BlockSessionModelTests: XCTestCase {
     XCTAssertFalse(model.isBlocking)
   }
 
+  func testUnknownKeyWithToggleScanAndPairedKeysDoesNotOfferPairing() async {
+    let model = makeModel()
+    model.addSeedKey(id: "known-key")
+
+    await model.handleKeyScan(
+      ScannedNFCKey(id: "random-uid", defaultName: "EasyCard", kind: .easyCard, detail: "Tag type: MiFare"),
+      purpose: .toggleBlock
+    )
+
+    XCTAssertNil(model.pendingScannedKey)
+    XCTAssertFalse(model.isBlocking)
+    XCTAssertTrue(model.statusMessage.contains("Unknown key"))
+  }
+
+  func testUnknownKeyWithPairingScanOffersPairing() async {
+    let model = makeModel()
+    model.addSeedKey(id: "known-key")
+
+    await model.handleKeyScan(
+      ScannedNFCKey(id: "second-key", defaultName: "Titan Key", kind: .titanKey, detail: "Tag type: ISO 7816"),
+      purpose: .pairing
+    )
+
+    XCTAssertNotNil(model.pendingScannedKey)
+    XCTAssertFalse(model.isBlocking)
+  }
+
   private func makeModel(
     shieldService: MockShieldService = MockShieldService(),
     defaults: UserDefaults? = nil

@@ -86,10 +86,16 @@ final class BlockSessionModel: ObservableObject {
     statusMessage = "NFC key removed."
   }
 
-  func handleKeyScan(_ scannedKey: ScannedNFCKey) async {
+  func handleKeyScan(_ scannedKey: ScannedNFCKey, purpose: ScanPurpose = .toggleBlock) async {
     guard let pairedKey = pairedKeys.first(where: { $0.id == scannedKey.id }) else {
       if isBlocking {
         statusMessage = "Unknown NFC key. Only an already-paired key can unbrick."
+        return
+      }
+
+      // 掃卡上鎖時卡對不上又已有配對 key，不該跳加卡 sheet（有些卡每次 tap 回報隨機 UID）。
+      if purpose == .toggleBlock && !pairedKeys.isEmpty {
+        statusMessage = "Unknown key (\(scannedKey.id.prefix(8))…). It doesn't match any paired key — pair it in Settings, or your card may use a random UID."
         return
       }
 

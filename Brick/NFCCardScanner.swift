@@ -2,20 +2,28 @@ import CoreNFC
 import CryptoKit
 import Foundation
 
+enum ScanPurpose {
+  case toggleBlock
+  case pairing
+}
+
 final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDelegate {
   @Published private(set) var isScanning = false
   @Published private(set) var lastErrorMessage: String?
   @Published private(set) var diagnosticLines: [String] = ["NFC idle."]
 
-  var onKeyScanned: ((ScannedNFCKey) -> Void)?
+  var onKeyScanned: ((ScannedNFCKey, ScanPurpose) -> Void)?
 
   private var session: NFCTagReaderSession?
+  private var purpose: ScanPurpose = .toggleBlock
 
   var isAvailable: Bool {
     NFCTagReaderSession.readingAvailable
   }
 
-  func beginScanning(reason: String = "Manual scan requested.") {
+  func beginScanning(reason: String = "Manual scan requested.", purpose: ScanPurpose = .toggleBlock) {
+    self.purpose = purpose
+
     guard NFCTagReaderSession.readingAvailable else {
       lastErrorMessage = "NFC scanning is not available on this device."
       diagnosticLines = ["NFC unavailable on this device."]
@@ -105,7 +113,7 @@ final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDeleg
       }
       // ponytail: 0.4s 是等 Core NFC 面板 dismiss 的經驗值；太快 SwiftUI sheet 會被靜默丟掉，偶發沒彈窗再往上調
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-        self.onKeyScanned?(scannedKey)
+        self.onKeyScanned?(scannedKey, self.purpose)
       }
     }
   }
