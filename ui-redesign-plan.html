@@ -64,7 +64,7 @@
 <header>
   <h1>🧱 首頁 UI Redesign 計畫</h1>
   <p>一顆會變色的大按鈕就是整個 app：綠 = 開放（點了上鎖）、紅 = 鎖定（點了掃卡解鎖）。</p>
-  <div class="status-banner" style="background: rgba(52,199,89,.15); color: #34c759;">✅ 已完工並驗收 — 2026-07-09 · 測試 14/14 綠 · Release build 過 · 已裝機</div>
+  <div class="status-banner" style="background: rgba(52,199,89,.15); color: #34c759;">✅ 核心 redesign 已完工 · 2026-07-10 校正時間控制現況</div>
 </header>
 
 <h2>設計原則</h2>
@@ -83,20 +83,16 @@
     <div class="bigcircle green">🔓</div>
     <div class="title">Ready</div>
     <div class="sub">Tap to brick · Social Apps · 2h</div>
-    <div class="chiprow">
-      <div class="chip">30m</div><div class="chip">1h</div><div class="chip on">2h</div><div class="chip">4h</div>
-    </div>
-    <div class="chiprow">
-      <div class="chip">15m 後</div><div class="chip">30m 後</div><div class="chip">1h 後</div>
-    </div>
-    <div class="footnote">倒數上鎖排程 chips（未排程時）</div>
+    <div class="chiprow"><div class="chip on">Block for　2h ▾</div></div>
+    <div class="chiprow"><div class="chip">Auto-brick at　10:30 PM　Set</div></div>
+    <div class="footnote">原生 menu picker + compact DatePicker</div>
   </div>
   <div class="phone">
     <div class="toprow"><span>Brick</span><span class="keychip">🔑 1</span></div>
     <div class="bigcircle red">🔒</div>
     <div class="title">Bricked</div>
     <div class="sub">1h 47m left · Tap to scan your key</div>
-    <div class="footnote">鎖定時不顯示 duration/排程 chips，畫面只剩狀態＋解鎖入口</div>
+    <div class="footnote">鎖定時不顯示 duration／排程控制，畫面只剩狀態＋解鎖入口</div>
   </div>
 </div>
 
@@ -108,7 +104,7 @@
   <tr><td>primaryAction（Brick Now / Scan to Unbrick 大按鈕）</td><td><span class="tag kill">砍</span></td><td>與大圓功能重複，砍掉後大圓是唯一主行動</td></tr>
   <tr><td>pairedKeySummary（大卡片）</td><td><span class="tag move">降級</span></td><td>縮成 toolbar 左上小 chip（key icon＋數字），管理仍在 Settings</td></tr>
   <tr><td>statusPanel（訊息面板）</td><td><span class="tag move">降級</span></td><td>縮成單行 footnote，只在有訊息時出現</td></tr>
-  <tr><td>durationPresetChips / scheduledLockSection</td><td><span class="tag keep">留</span></td><td>只在未鎖時顯示（現狀）</td></tr>
+  <tr><td>durationPicker / scheduledLockSection</td><td><span class="tag keep">留</span></td><td>只在未鎖時顯示；已改成原生 menu picker 與 compact DatePicker</td></tr>
   <tr><td>setupAction（Choose Apps）</td><td><span class="tag keep">留</span></td><td>未選 app 時仍是必要引導</td></tr>
   <tr><td>smallManualStop（Debug）</td><td><span class="tag keep">留</span></td><td>DEBUG-only 不動</td></tr>
   <tr><td>toolbar 掃描 icon</td><td><span class="tag keep">留</span></td><td>手動掃卡入口保留（配對前的首次掃卡需要）</td></tr>
@@ -129,13 +125,13 @@
 <h2>驗證</h2>
 <div class="card">
   <ul>
-    <li>單元測試全綠（UI-only 改動，既有 14 個 test 不應受影響）。</li>
-    <li>Release build 成功。</li>
+    <li>2026-07-10 regression suite：18/18 全綠。</li>
+    <li>2026-07-10 Release no-sign compile check 成功。</li>
     <li>實機安裝 iPhone12P：綠圓點擊 → 立即上鎖變紅；紅圓點擊 → NFC 面板 → 刷 EasyCard → 變綠。</li>
   </ul>
 </div>
 
-<footer>Brick · ui-redesign-plan.html · 2026-07-09 · 驗收後更新狀態</footer>
+<footer>Brick · ui-redesign-plan.html · 2026-07-10 · 已同步原生時間控制</footer>
 </div>
 </body>
 </html>

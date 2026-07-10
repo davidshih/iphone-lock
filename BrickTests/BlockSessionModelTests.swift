@@ -57,11 +57,50 @@ final class BlockSessionModelTests: XCTestCase {
   func testEmergencyUnbrickStopsBlockAndDecrementsCount() async {
     let shieldService = MockShieldService()
     let defaults = testDefaults()
-    let model = makeModel(shieldService: shieldService, defaults: defaults)
+    let emergencyStore = MockEmergencyUnbrickStore()
+    let model = makeModel(
+      shieldService: shieldService,
+      defaults: defaults,
+      emergencyStore: emergencyStore
+    )
     let scannedKey = ScannedNFCKey(id: "known-key", defaultName: "YubiKey", kind: .yubiKey, detail: "Tag type: ISO 7816")
     model.addSeedKey(id: "known-key")
 
     await model.handleKeyScan(scannedKey)
+    model.useEmergencyUnbrick()
+
+    XCTAssertFalse(model.isBlocking)
+    XCTAssertEqual(model.emergencyUnbricksRemaining, 4)
+    XCTAssertEqual(emergencyStore.value, 4)
+    XCTAssertNil(defaults.object(forKey: BrickDefaults.emergencyUnbricksRemainingKey))
+  }
+
+  func testLegacyEmergencyCountMigratesToSecureStore() {
+    let defaults = testDefaults()
+    defaults.set(2, forKey: BrickDefaults.emergencyUnbricksRemainingKey)
+    let emergencyStore = MockEmergencyUnbrickStore()
+
+    let model = makeModel(defaults: defaults, emergencyStore: emergencyStore)
+
+    XCTAssertEqual(model.emergencyUnbricksRemaining, 2)
+    XCTAssertEqual(emergencyStore.value, 2)
+    XCTAssertNil(defaults.object(forKey: BrickDefaults.emergencyUnbricksRemainingKey))
+  }
+
+  func testEmergencyCountFallsBackToDefaultsWhenSecureSaveFails() async {
+    let defaults = testDefaults()
+    let emergencyStore = MockEmergencyUnbrickStore()
+    emergencyStore.value = 5
+    let model = makeModel(defaults: defaults, emergencyStore: emergencyStore)
+    model.addSeedKey(id: "known-key")
+    await model.handleKeyScan(ScannedNFCKey(
+      id: "known-key",
+      defaultName: "YubiKey",
+      kind: .yubiKey,
+      detail: "Tag type: ISO 7816"
+    ))
+    emergencyStore.shouldFailSave = true
+
     model.useEmergencyUnbrick()
 
     XCTAssertFalse(model.isBlocking)
@@ -120,6 +159,52 @@ final class BlockSessionModelTests: XCTestCase {
     XCTAssertFalse(model.isBlocking)
   }
 
+  func testFutureScheduledLockRestartsTimerAfterRestore() async {
+    let defaults = testDefaults()
+    let startAt = Date().addingTimeInterval(60 * 60)
+    defaults.set(startAt, forKey: BrickDefaults.scheduledStartKey)
+    let model = makeModel(defaults: defaults)
+
+    XCTAssertFalse(model.hasActiveScheduleTimer)
+
+    await model.restoreSessionIfNeeded()
+
+    XCTAssertEqual(model.scheduledStartAt, startAt)
+    XCTAssertTrue(model.hasActiveScheduleTimer)
+    model.cancelScheduledLock()
+  }
+
+  func testPastClockTimeSchedulesNextCalendarDay() {
+    let model = makeModel()
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let now = calendar.date(from: DateComponents(
+      year: 2026,
+      month: 7,
+      day: 10,
+      hour: 15
+    ))!
+    let selectedTime = calendar.date(from: DateComponents(
+      year: 2026,
+      month: 7,
+      day: 10,
+      hour: 14,
+      minute: 30
+    ))!
+    let expected = calendar.date(from: DateComponents(
+      year: 2026,
+      month: 7,
+      day: 11,
+      hour: 14,
+      minute: 30
+    ))!
+
+    model.scheduleLock(at: selectedTime, now: now, calendar: calendar)
+
+    XCTAssertEqual(model.scheduledStartAt?.timeIntervalSince1970, expected.timeIntervalSince1970)
+    model.cancelScheduledLock()
+  }
+
   func testUnknownKeyWithToggleScanAndPairedKeysDoesNotOfferPairing() async {
     let model = makeModel()
     model.addSeedKey(id: "known-key")
@@ -155,12 +240,14 @@ final class BlockSessionModelTests: XCTestCase {
 
   private func makeModel(
     shieldService: MockShieldService = MockShieldService(),
-    defaults: UserDefaults? = nil
+    defaults: UserDefaults? = nil,
+    emergencyStore: MockEmergencyUnbrickStore = MockEmergencyUnbrickStore()
   ) -> BlockSessionModel {
     BlockSessionModel(
       shieldService: shieldService,
       authorizer: MockAuthorizer(),
-      defaults: defaults ?? testDefaults()
+      defaults: defaults ?? testDefaults(),
+      emergencyStore: emergencyStore
     )
   }
 
@@ -191,4 +278,24 @@ private final class MockShieldService: ScreenTimeShieldServicing {
 
 private struct MockAuthorizer: ScreenTimeAuthorizing {
   func requestAuthorization() async throws {}
+}
+
+private final class MockEmergencyUnbrickStore: EmergencyUnbrickStoring {
+  var value: Int?
+  var shouldFailSave = false
+
+  func load() throws -> Int? {
+    value
+  }
+
+  func save(_ value: Int) throws {
+    if shouldFailSave {
+      throw MockEmergencyStoreError.saveFailed
+    }
+    self.value = value
+  }
+}
+
+private enum MockEmergencyStoreError: Error {
+  case saveFailed
 }

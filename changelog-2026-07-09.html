@@ -49,15 +49,15 @@
 <header>
   <h1>🧱 Brick 更新紀錄</h1>
   <p>2026-07-09 開發週期總結 — 六個 commit，從「處處後門」到「一顆綠紅大圓 + 原生時間選擇器」。</p>
-  <div class="banner">✅ 本週期已收尾 · 測試 14/14 綠 · 已部署 iPhone12P</div>
+  <div class="banner">✅ 2026-07-09 驗證 · 測試 14/14 綠 · 已部署 iPhone12P</div>
 </header>
 
 <h2>本週期 Commits</h2>
 <table>
   <tr><th>Commit</th><th>內容</th></tr>
-  <tr><td class="hash">6e2e9d0</td><td><b>NFC UX 修復 + 定時上鎖</b> — 移除回前景自動掃 NFC（根治鎖定中無限掃迴圈）；掃卡結果延後 0.4s 派送，修好 NFC 面板收合後 sheet 被靜默丟掉的問題；新增首頁時長快選與「N 分鐘後自動上鎖」排程（本地通知提醒）。</td></tr>
+  <tr><td class="hash">6e2e9d0</td><td><b>NFC UX 修復 + 上鎖排程</b> — 移除回前景自動掃 NFC（根治鎖定中無限掃迴圈）；掃卡結果延後 0.4s 派送，降低 NFC 面板收合後 sheet 被靜默丟掉的機率；新增首頁時長快選與排程。App 活躍時由 timer 執行，背景時由本地通知提醒使用者開啟 Brick。</td></tr>
   <tr><td class="hash">17cccb1</td><td><b>鎖頭可點 + 掃卡意圖分離</b> — 大鎖頭變成按鈕（點了上鎖/叫掃卡）；新增 <code>ScanPurpose</code>：首頁掃卡不再誤開「加新卡」視窗，配對一律走 Settings → Add NFC Key；首次使用（無任何 key）仍可從首頁配對。</td></tr>
-  <tr><td class="hash">a5fa83f</td><td><b>刷卡即解鎖</b> — 砍掉 5 秒冷靜倒數確認 sheet（+1/−125 行）。實體鑰匙即摩擦力，UI 不疊儀式；解鎖路徑不再依賴任何可能 silent fail 的 sheet presentation。冷靜機制只留在 Emergency Unbrick。</td></tr>
+  <tr><td class="hash">a5fa83f</td><td><b>刷卡即解鎖</b> — 砍掉 5 秒冷靜倒數確認 sheet（+1/−125 行）。實體鑰匙即摩擦力，UI 不疊儀式；解鎖路徑不再依賴可能 silent fail 的 sheet presentation。Emergency Unbrick 保留有限次數成本，但目前沒有倒數。</td></tr>
   <tr><td class="hash">403aa7b</td><td><b>Random UID 卡攔截 + ID 透明化</b> — EMV 類卡（4-byte UID 首 byte 0x08）掃描當場拒絕並說明原因；所有 unknown key 訊息顯示 12 碼 short ID，可與 Settings 配對清單直接比對。</td></tr>
   <tr><td class="hash">0f6b865</td><td><b>首頁 redesign</b> — 一顆會變色的大圓就是整個 app：綠圓 🔓 點了立即上鎖、紅圓 🔒 點了掃卡解鎖，掃描中圓上顯示轉圈。砍掉狀態膠囊、Brick Now 大按鈕、key 大卡片；key 數量縮成 toolbar 小 chip，狀態訊息降為置底小字。</td></tr>
   <tr><td class="hash">165d071</td><td><b>原生時間選擇器</b> — 自製時間 chips（實機點擊閃退）整排移除：Block for 改原生 menu picker（15m–8h）；Auto-brick at 改系統緊湊時間選擇器（iPhone 鬧鐘同款滾輪，過去時間自動視為明天）。</td></tr>
@@ -67,21 +67,21 @@
 <div class="flow">
   <div class="step">🟢 <b>綠圓</b>：點一下立即上鎖</div>
   <div class="step">⏱ <b>Block for</b>：menu 選時長</div>
-  <div class="step">⏰ <b>Auto-brick at</b>：滾輪選定時上鎖</div>
+  <div class="step">⏰ <b>Auto-brick at</b>：前景自動執行，背景通知提醒</div>
   <div class="step">🔴 <b>紅圓</b>：點一下掃卡解鎖</div>
   <div class="step">🆘 <b>Emergency</b>：Settings 內，限 5 次</div>
 </div>
 <div class="card" style="margin-top:14px;">
-  <p>解鎖唯二路徑：刷<b>已配對</b>的 NFC key（即時解鎖、無確認步驟），或消耗一次 Emergency Unbrick。Release build 無任何手動停止後門（Debug build 保留 <code>Manual Stop (Debug)</code> 供測試）。</p>
+  <p>在 session 自然到期前，提前解鎖有兩條使用者路徑：刷<b>已配對</b>的 NFC key（即時解鎖、無確認步驟），或消耗一次 Emergency Unbrick。Release build 無手動停止按鈕（Debug build 保留 <code>Manual Stop (Debug)</code> 供測試）。</p>
 </div>
 
-<h2>NFC 卡種相容性（實機驗證）</h2>
+<h2>NFC 樣本相容性（2026-07-09 實機驗證）</h2>
 <table>
-  <tr><th>卡種</th><th>可用</th><th>原因</th></tr>
-  <tr><td>EasyCard 悠遊卡（MIFARE）</td><td class="ok">✅ 可用</td><td>UID 固定，配對/解鎖穩定</td></tr>
-  <tr><td>一般 NFC tag / NTAG 貼紙 / 門禁卡</td><td class="ok">✅ 可用</td><td>UID 固定</td></tr>
-  <tr><td>YubiKey / Titan Key（ISO 7816）</td><td class="no">❌ 不可用</td><td>每次 tap 回報新 identifier，永遠配不回來</td></tr>
-  <tr><td>信用卡 / 金融卡（EMV）</td><td class="no">❌ 不可用</td><td>規範性 random UID（首 byte 0x08），app 已主動攔截並提示</td></tr>
+  <tr><th>測試樣本</th><th>結果</th><th>觀察</th></tr>
+  <tr><td>EasyCard 悠遊卡（MIFARE）</td><td class="ok">✅ 通過</td><td>受測卡 UID 固定，配對/解鎖穩定</td></tr>
+  <tr><td>固定 UID NFC tag / NTAG 樣本</td><td class="ok">✅ 通過</td><td>實際支援仍取決於 tag、協定、iPhone 與 OS</td></tr>
+  <tr><td>受測 YubiKey / Titan Key（ISO 7816）</td><td class="no">❌ 未通過</td><td>受測裝置每次 tap 回報不同 identifier；不代表所有型號與韌體</td></tr>
+  <tr><td>受測信用卡 / 金融卡（EMV）</td><td class="no">❌ 未通過</td><td>4-byte、首 byte 0x08 的 random UID 會被 app 主動攔截</td></tr>
 </table>
 
 <h2>驗證與部署</h2>
@@ -98,15 +98,15 @@
 <div class="card">
   <ul>
     <li><b>P1 無限期模式</b> — 「鎖到刷卡為止」，getbrick 的本命模式（目前上限 8h）。</li>
-    <li><b>P1 DeviceActivity 自動到期</b> — app 被殺掉時 shield 到點自動解除（目前靠下次開 app 補處理）。</li>
-    <li><b>P1 Emergency 次數搬 Keychain</b> — 現在放 UserDefaults，刪 app 重裝會回滿。</li>
+    <li><b>P1 DeviceActivity 背景排程</b> — app 被殺掉時準時開始與結束 shield；目前背景開始只通知、到期靠下次開 app 補處理。</li>
+    <li><b>DONE 2026-07-10：Emergency 次數搬 Keychain</b> — 包含舊版 UserDefaults migration 與寫入失敗 fallback。</li>
     <li><b>P2 NDEF 背景喚醒</b> — tag 寫 universal link，碰手機直接拉起 app。</li>
     <li><b>P2 移除裝飾性 targetName</b> — 從 selection 自動生成顯示名稱。</li>
   </ul>
   <p style="margin-top:8px;">詳見 <a href="improvement-plan.html">improvement-plan.html</a> 與 <a href="ui-redesign-plan.html">ui-redesign-plan.html</a>。</p>
 </div>
 
-<footer>Brick · changelog-2026-07-09.html · 6 commits · 6e2e9d0…165d071</footer>
+<footer>Brick · changelog-2026-07-09.html · 6 commits · 6e2e9d0…165d071 · 2026-07-10 校正限制描述</footer>
 </div>
 </body>
 </html>

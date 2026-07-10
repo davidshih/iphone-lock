@@ -1,5 +1,6 @@
 import FamilyControls
 import Foundation
+import Security
 import UserNotifications
 
 protocol ScreenTimeAuthorizing {
@@ -9,6 +10,77 @@ protocol ScreenTimeAuthorizing {
 struct ScreenTimeAuthorizer: ScreenTimeAuthorizing {
   func requestAuthorization() async throws {
     try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+  }
+}
+
+protocol EmergencyUnbrickStoring {
+  func load() throws -> Int?
+  func save(_ value: Int) throws
+}
+
+enum EmergencyUnbrickStoreError: LocalizedError {
+  case unexpectedStatus(OSStatus)
+  case invalidData
+
+  var errorDescription: String? {
+    switch self {
+    case .unexpectedStatus(let status):
+      return "Keychain operation failed with status \(status)."
+    case .invalidData:
+      return "The saved emergency count is invalid."
+    }
+  }
+}
+
+struct KeychainEmergencyUnbrickStore: EmergencyUnbrickStoring {
+  private let service = "com.davidshih.brick.emergency-unbrick"
+  private let account = "remaining-count"
+
+  func load() throws -> Int? {
+    var query = baseQuery
+    query[kSecReturnData] = true
+    query[kSecMatchLimit] = kSecMatchLimitOne
+
+    var item: CFTypeRef?
+    let status = SecItemCopyMatching(query as CFDictionary, &item)
+    if status == errSecItemNotFound {
+      return nil
+    }
+    guard status == errSecSuccess else {
+      throw EmergencyUnbrickStoreError.unexpectedStatus(status)
+    }
+    guard
+      let data = item as? Data,
+      let text = String(data: data, encoding: .utf8),
+      let value = Int(text)
+    else {
+      throw EmergencyUnbrickStoreError.invalidData
+    }
+    return value
+  }
+
+  func save(_ value: Int) throws {
+    let attributes = [kSecValueData: Data(String(value).utf8)] as CFDictionary
+    let updateStatus = SecItemUpdate(baseQuery as CFDictionary, attributes)
+
+    if updateStatus == errSecItemNotFound {
+      var item = baseQuery
+      item[kSecValueData] = Data(String(value).utf8)
+      let addStatus = SecItemAdd(item as CFDictionary, nil)
+      guard addStatus == errSecSuccess else {
+        throw EmergencyUnbrickStoreError.unexpectedStatus(addStatus)
+      }
+    } else if updateStatus != errSecSuccess {
+      throw EmergencyUnbrickStoreError.unexpectedStatus(updateStatus)
+    }
+  }
+
+  private var baseQuery: [CFString: Any] {
+    [
+      kSecClass: kSecClassGenericPassword,
+      kSecAttrService: service,
+      kSecAttrAccount: account
+    ]
   }
 }
 
@@ -32,6 +104,7 @@ final class BlockSessionModel: ObservableObject {
   private let shieldService: ScreenTimeShieldServicing
   private let authorizer: ScreenTimeAuthorizing
   private let defaults: UserDefaults
+  private let emergencyStore: EmergencyUnbrickStoring
   private var timer: Timer?
   private var scheduleTimer: Timer?
 
@@ -41,6 +114,10 @@ final class BlockSessionModel: ObservableObject {
 
   var hasSelection: Bool {
     !selection.isEmpty
+  }
+
+  var hasActiveScheduleTimer: Bool {
+    scheduleTimer?.isValid == true
   }
 
   var remainingText: String {
@@ -62,15 +139,35 @@ final class BlockSessionModel: ObservableObject {
   init(
     shieldService: ScreenTimeShieldServicing = ScreenTimeShieldService(),
     authorizer: ScreenTimeAuthorizing = ScreenTimeAuthorizer(),
-    defaults: UserDefaults = .standard
+    defaults: UserDefaults = .standard,
+    emergencyStore: EmergencyUnbrickStoring = KeychainEmergencyUnbrickStore()
   ) {
     self.shieldService = shieldService
     self.authorizer = authorizer
     self.defaults = defaults
+    self.emergencyStore = emergencyStore
     self.settings = SettingsStore.load(defaults: defaults)
     self.selection = ActivitySelectionStore.load(defaults: defaults)
     self.pairedKeys = PairedNFCKeyStore.load(defaults: defaults)
-    self.emergencyUnbricksRemaining = defaults.object(forKey: BrickDefaults.emergencyUnbricksRemainingKey) as? Int ?? 5
+    let legacyEmergencyCount = defaults.object(forKey: BrickDefaults.emergencyUnbricksRemainingKey) as? Int
+    let secureEmergencyCount: Int?
+    do {
+      secureEmergencyCount = try emergencyStore.load()
+    } catch {
+      secureEmergencyCount = nil
+    }
+    let resolvedEmergencyCount = secureEmergencyCount ?? legacyEmergencyCount ?? 5
+    self.emergencyUnbricksRemaining = min(max(resolvedEmergencyCount, 0), 5)
+    if secureEmergencyCount != self.emergencyUnbricksRemaining {
+      do {
+        try emergencyStore.save(self.emergencyUnbricksRemaining)
+        defaults.removeObject(forKey: BrickDefaults.emergencyUnbricksRemainingKey)
+      } catch {
+        // Keep the legacy value as a fallback when secure storage is unavailable.
+      }
+    } else if legacyEmergencyCount != nil {
+      defaults.removeObject(forKey: BrickDefaults.emergencyUnbricksRemainingKey)
+    }
     self.scheduledStartAt = defaults.object(forKey: BrickDefaults.scheduledStartKey) as? Date
   }
 
@@ -92,7 +189,7 @@ final class BlockSessionModel: ObservableObject {
         return
       }
 
-      // 掃卡上鎖時卡對不上又已有配對 key，不該跳加卡 sheet（有些卡每次 tap 回報隨機 UID）。
+      // A toggle scan must not offer pairing when another key is already paired.
       if purpose == .toggleBlock && !pairedKeys.isEmpty {
         statusMessage = "Unknown key (\(scannedKey.id.prefix(12))…). It doesn't match any paired key — pair it in Settings, or your card may use a random UID."
         return
@@ -141,7 +238,12 @@ final class BlockSessionModel: ObservableObject {
     }
 
     emergencyUnbricksRemaining -= 1
-    defaults.set(emergencyUnbricksRemaining, forKey: BrickDefaults.emergencyUnbricksRemainingKey)
+    do {
+      try emergencyStore.save(emergencyUnbricksRemaining)
+      defaults.removeObject(forKey: BrickDefaults.emergencyUnbricksRemainingKey)
+    } catch {
+      defaults.set(emergencyUnbricksRemaining, forKey: BrickDefaults.emergencyUnbricksRemainingKey)
+    }
     stopBlocking(reason: "Emergency unbrick used. \(emergencyUnbricksRemaining) left.")
   }
 
@@ -178,9 +280,33 @@ final class BlockSessionModel: ObservableObject {
 
   func scheduleLock(after interval: TimeInterval) {
     let startAt = Date().addingTimeInterval(interval)
+    setScheduledLock(at: startAt, notificationInterval: interval)
+  }
+
+  func scheduleLock(
+    at selectedTime: Date,
+    now: Date = Date(),
+    calendar: Calendar = .current
+  ) {
+    let components = calendar.dateComponents([.hour, .minute], from: selectedTime)
+    guard let startAt = calendar.nextDate(
+      after: now,
+      matching: components,
+      matchingPolicy: .nextTime,
+      repeatedTimePolicy: .first,
+      direction: .forward
+    ) else {
+      statusMessage = "Unable to schedule the selected time."
+      return
+    }
+
+    setScheduledLock(at: startAt, notificationInterval: startAt.timeIntervalSince(now))
+  }
+
+  private func setScheduledLock(at startAt: Date, notificationInterval: TimeInterval) {
     scheduledStartAt = startAt
     defaults.set(startAt, forKey: BrickDefaults.scheduledStartKey)
-    scheduleNotification(interval: interval)
+    scheduleNotification(interval: notificationInterval)
     startScheduleTimer()
     statusMessage = "Scheduled to brick at \(startAt.formatted(date: .omitted, time: .shortened))."
   }
@@ -225,7 +351,7 @@ final class BlockSessionModel: ObservableObject {
     await startBlocking()
   }
 
-  // ponytail: app 前景在場即刻上鎖，否則下次開 app 補上鎖；通知負責提醒。真背景排程需 DeviceActivity extension（deferred，見 improvement-plan.html P1）
+  // The timer can brick while the app is active. Background execution needs a DeviceActivity extension.
   private func scheduleNotification(interval: TimeInterval) {
     let center = UNUserNotificationCenter.current()
     center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
@@ -252,13 +378,13 @@ final class BlockSessionModel: ObservableObject {
       let data = defaults.data(forKey: BrickDefaults.sessionKey),
       let session = try? JSONDecoder().decode(BlockSession.self, from: data)
     else {
-      await fireScheduledLockIfDue()
+      await restoreScheduledLockIfNeeded()
       return
     }
 
     if session.endsAt <= Date() {
       stopBlocking(reason: "Previous block expired.")
-      await fireScheduledLockIfDue()
+      await restoreScheduledLockIfNeeded()
       return
     }
 
@@ -270,7 +396,21 @@ final class BlockSessionModel: ObservableObject {
     } catch {
       statusMessage = error.localizedDescription
     }
-    await fireScheduledLockIfDue()
+    await restoreScheduledLockIfNeeded()
+  }
+
+  private func restoreScheduledLockIfNeeded() async {
+    guard let scheduledStartAt else {
+      return
+    }
+
+    if isBlocking {
+      clearScheduledLock()
+    } else if scheduledStartAt <= Date() {
+      await fireScheduledLockIfDue()
+    } else {
+      startScheduleTimer()
+    }
   }
 
   private func saveSession(_ session: BlockSession) {

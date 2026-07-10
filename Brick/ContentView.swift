@@ -174,7 +174,7 @@ private struct HomeView: View {
 
   private static let durationOptions = [15, 30, 45, 60, 90, 120, 180, 240, 360, 480]
 
-  // Settings 的 stepper 可調出不在清單裡的值（如 75m），併進來避免 Picker 對不到 tag 顯示空白
+  // Include custom values from Settings so the picker always has a matching tag.
   private var durationOptions: [Int] {
     Self.durationOptions.contains(model.settings.durationMinutes)
       ? Self.durationOptions
@@ -240,9 +240,7 @@ private struct HomeView: View {
           .labelsHidden()
 
           Button("Set") {
-            let interval = scheduleTime.timeIntervalSinceNow
-            // 選到已過去的時間 = 明天的那個時間（鬧鐘語意）
-            model.scheduleLock(after: interval > 0 ? interval : interval + 86_400)
+            model.scheduleLock(at: scheduleTime)
           }
           .font(.subheadline.weight(.semibold))
           .buttonStyle(.bordered)

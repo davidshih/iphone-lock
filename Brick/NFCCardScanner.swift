@@ -121,7 +121,7 @@ final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDeleg
         self.isScanning = false
         self.diagnosticLines.append("Card fingerprint saved: \(scannedKey.id.prefix(12))...")
       }
-      // ponytail: 0.4s 是等 Core NFC 面板 dismiss 的經驗值；太快 SwiftUI sheet 會被靜默丟掉，偶發沒彈窗再往上調
+      // Allow the Core NFC panel to dismiss before presenting SwiftUI state-driven UI.
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
         self.onKeyScanned?(scannedKey, self.purpose)
       }
@@ -187,7 +187,7 @@ enum NFCFingerprint {
     }
   }
 
-  // ponytail: ISO 14443-3A 規範 4-byte UID 首 byte 0x08 = random ID（EMV 卡都是），每次 tap 換號，永遠配不回來
+  // A 4-byte ISO 14443-3A UID beginning with 0x08 is a random identifier.
   static func isRandomUID(_ bytes: [UInt8]) -> Bool {
     bytes.count == 4 && bytes.first == 0x08
   }

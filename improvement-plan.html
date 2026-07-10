@@ -93,8 +93,8 @@
 <header>
   <div class="brick">🧱</div>
   <h1>Brick 改善計畫</h1>
-  <p>目標：對齊 getbrick.com 的核心體驗——不碰實體 NFC key，就是解不開。</p>
-  <p class="meta">2026-07-09 · 基於 main branch code review</p>
+  <p>目標：對齊 getbrick.com 的核心體驗——提前解鎖預設需要實體 NFC key，Emergency 則保留有限成本。</p>
+  <p class="meta">2026-07-10 · 基於 main branch code review 更新</p>
 </header>
 
 <h2>✅ 本輪已完成</h2>
@@ -102,7 +102,7 @@
 <div class="card done-card">
   <h3><span class="tag done">DONE</span>1. 移除 Release 版手動解鎖後門</h3>
   <p>首頁 <code>Manual Stop</code> 與 Settings 的 <code>End Block Now</code> 改為 <code>#if DEBUG</code> 限定。
-  正式版唯二解鎖路徑：掃已配對 NFC key（含 5 秒冷靜倒數確認）、或消耗一次 Emergency Unbrick。</p>
+  在 session 自然到期前，正式版的提前解鎖路徑是掃已配對 NFC key（即時解除）、或消耗一次 Emergency Unbrick。</p>
   <p class="meta">ContentView.swift · Release build 驗證通過</p>
 </div>
 
@@ -120,6 +120,13 @@
   <p class="meta">NFCFingerprint.scannedKey 改回傳 Optional，掃描器對 nil 直接 invalidate</p>
 </div>
 
+<div class="card done-card">
+  <h3><span class="tag done">DONE</span>4. 恢復重啟前的未來上鎖排程</h3>
+  <p>App 在排程到期前重啟時會重新建立 timer，不再只顯示倒數卻永遠不觸發。
+  時間選擇改由 <code>Calendar.nextDate</code> 計算下一次發生時間，避免固定加 86,400 秒造成 DST 誤差。</p>
+  <p class="meta">BlockSessionModel.restoreScheduledLockIfNeeded · 新增重啟與跨日回歸測試</p>
+</div>
+
 <h2>🗺️ 功能 Roadmap</h2>
 
 <div class="card">
@@ -129,20 +136,20 @@
 </div>
 
 <div class="card">
-  <h3><span class="tag p1">P1</span>DeviceActivity 自動到期</h3>
-  <p>目前 shield 到期清除只靠 app 內 Timer，app 被殺掉後會鎖到下次開 app 為止，跟 UI 顯示的剩餘時間不符。
-  用 <code>DeviceActivityCenter</code> 排 schedule + Monitor extension 在 <code>intervalDidEnd</code> 清 shield。</p>
+  <h3><span class="tag p1">P1</span>DeviceActivity 背景開始與到期</h3>
+  <p>目前背景中的排程開始只會送通知，shield 到期清除則依賴 app 內 Timer；app 被殺掉後，兩端都無法準時執行。
+  用 <code>DeviceActivityCenter</code> 安排 schedule，並由 Monitor extension 在 interval callbacks 套用或清除 shield。</p>
 </div>
 
-<div class="card">
-  <h3><span class="tag p1">P1</span>Emergency 次數搬進 Keychain</h3>
-  <p>現在放 UserDefaults，刪 app 重裝就回滿 5 次。Keychain 在 reinstall 後仍保留，一行 wrapper 就能換。</p>
+<div class="card done-card">
+  <h3><span class="tag done">DONE</span>Emergency 次數搬進 Keychain</h3>
+  <p>剩餘次數改由 Keychain 保存，並包含舊版 UserDefaults 一次性 migration。Keychain 寫入失敗時會 fallback 到 UserDefaults，避免 Emergency 解鎖本身失效。</p>
 </div>
 
 <div class="card">
   <h3><span class="tag p2">P2</span>NDEF 背景喚醒</h3>
   <p>iPhone 對 NDEF tag 有系統級背景讀取：tag 寫入 universal link，碰一下手機直接拉起 app 進入解鎖流程。
-  這才是「拿手機碰磚」的正確姿勢，也順便解掉每次進前景就彈 NFC sheet 的干擾。</p>
+  這能減少先手動開啟 app、再點擊掃描按鈕的操作步驟。</p>
 </div>
 
 <div class="card">
@@ -176,9 +183,9 @@
     <td><span class="tag p2">P2</span></td>
   </tr>
   <tr>
-    <td>U4</td><td>Duration 改 preset chips</td>
-    <td>Stepper 按 31 次才能從 15m 到 8h。改成 30m / 1h / 2h / 4h / ∞ 一排 chips。</td>
-    <td><span class="tag p2">P2</span></td>
+    <td>U4</td><td>原生時間控制</td>
+    <td>首頁已改用 menu picker 選 block 時長，Auto-brick 改用系統 DatePicker；無限期模式仍待實作。</td>
+    <td><span class="tag done">DONE</span></td>
   </tr>
   <tr>
     <td>U5</td><td>Settings 收納</td>
@@ -212,7 +219,7 @@
   </div>
 </div>
 
-<footer>Brick · improvement-plan.html · 產生於 2026-07-09</footer>
+<footer>Brick · improvement-plan.html · 更新於 2026-07-10</footer>
 </div>
 </body>
 </html>
