@@ -58,33 +58,43 @@ private struct HomeView: View {
       VStack(spacing: 24) {
         Spacer(minLength: 12)
 
-        statusBadge
         lockMark
-        statusCopy
-        pairedKeySummary
-        statusPanel
+        statusHeading
         setupAction
         durationPresetChips
         scheduledLockSection
-        primaryAction
-        smallManualStop
-        helperCopy
+
+        Spacer(minLength: 12)
+
+        Text(model.statusMessage)
+          .font(.footnote)
+          .foregroundStyle(.secondary)
+          .multilineTextAlignment(.center)
+          .lineLimit(2)
 
         if let lastErrorMessage = scanner.lastErrorMessage {
           Text(lastErrorMessage)
             .font(.footnote)
-            .foregroundStyle(.red)
+            .foregroundStyle(Color.red)
             .multilineTextAlignment(.center)
-            .padding(.horizontal, 24)
+            .lineLimit(2)
         }
 
-        Spacer(minLength: 24)
+        smallManualStop
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .padding(.horizontal, 24)
+      .padding(.bottom, 16)
       .background(Color(.systemGroupedBackground))
       .navigationTitle("Brick")
       .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Label(model.pairedKeys.isEmpty ? "No key" : "\(model.pairedKeys.count)", systemImage: "key.radiowaves.forward")
+            .labelStyle(.titleAndIcon)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
+
         ToolbarItem(placement: .topBarTrailing) {
           Button {
             scanner.beginScanning()
@@ -96,17 +106,6 @@ private struct HomeView: View {
         }
       }
     }
-  }
-
-  private var statusBadge: some View {
-    Text(model.isBlocking ? "BRICKED" : "READY")
-      .font(.caption.weight(.bold))
-      .tracking(1.6)
-      .foregroundStyle(model.isBlocking ? .white : .secondary)
-      .padding(.horizontal, 14)
-      .padding(.vertical, 8)
-      .background(model.isBlocking ? Color.black : Color(.secondarySystemGroupedBackground))
-      .clipShape(Capsule())
   }
 
   private var lockMark: some View {
@@ -121,65 +120,38 @@ private struct HomeView: View {
     } label: {
       ZStack {
         Circle()
-          .fill(model.isBlocking ? Color.black : Color.white)
-          .shadow(color: .black.opacity(0.08), radius: 24, y: 12)
+          .fill(model.isBlocking ? Color.red : Color.green)
+          .shadow(color: .black.opacity(0.15), radius: 24, y: 12)
 
         Image(systemName: model.isBlocking ? "lock.fill" : "lock.open.fill")
-          .font(.system(size: 58, weight: .semibold))
-          .foregroundStyle(model.isBlocking ? .white : .black)
+          .font(.system(size: 64, weight: .semibold))
+          .foregroundStyle(Color.white)
+          .opacity(scanner.isScanning ? 0.35 : 1)
+
+        if scanner.isScanning {
+          ProgressView()
+            .tint(.white)
+            .scaleEffect(1.8)
+        }
       }
-      .frame(width: 160, height: 160)
+      .frame(width: 180, height: 180)
     }
     .buttonStyle(.plain)
     .accessibilityIdentifier("lockMarkButton")
   }
 
-  private var statusCopy: some View {
-    VStack(spacing: 8) {
-      Text(model.isBlocking ? "Your iPhone is bricked." : "Ready to brick.")
-        .font(.title2.weight(.semibold))
-        .multilineTextAlignment(.center)
+  private var statusHeading: some View {
+    VStack(spacing: 6) {
+      Text(model.isBlocking ? "Bricked" : "Ready")
+        .font(.title.weight(.bold))
 
-      Text(model.isBlocking ? model.remainingText : "Blocks \(model.settings.targetName) for \(durationText).")
-        .font(.body)
+      Text(model.isBlocking
+        ? "\(model.remainingText) · Tap to scan your key"
+        : "Tap to brick · \(model.settings.targetName) · \(durationText)")
+        .font(.subheadline)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
     }
-  }
-
-  private var pairedKeySummary: some View {
-    HStack(spacing: 12) {
-      Image(systemName: "key.radiowaves.forward")
-        .font(.title3.weight(.semibold))
-        .foregroundStyle(.white)
-        .frame(width: 42, height: 42)
-        .background(Color.black)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-      VStack(alignment: .leading, spacing: 3) {
-        Text("\(model.pairedKeys.count) paired NFC \(model.pairedKeys.count == 1 ? "key" : "keys")")
-          .font(.headline)
-        Text(scanner.isScanning ? "Hold near NFC key" : "Tap the small NFC icon to scan")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-      }
-
-      Spacer()
-    }
-    .padding(16)
-    .background(Color(.secondarySystemGroupedBackground))
-    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-  }
-
-  private var statusPanel: some View {
-    Text(model.statusMessage)
-      .font(.footnote)
-      .foregroundStyle(.secondary)
-      .multilineTextAlignment(.leading)
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(14)
-      .background(Color(.secondarySystemGroupedBackground))
-      .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
   }
 
   @ViewBuilder
@@ -287,26 +259,6 @@ private struct HomeView: View {
     return "\(seconds)s"
   }
 
-  private var primaryAction: some View {
-    Button {
-      if model.isBlocking {
-        scanner.beginScanning(reason: "Manual unbrick scan requested.", purpose: .toggleBlock)
-      } else {
-        Task {
-          await model.startBlocking()
-        }
-      }
-    } label: {
-      Text(model.isBlocking ? "Scan Brick to Unbrick" : "Brick Now")
-        .font(.headline)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-    }
-    .buttonStyle(.borderedProminent)
-    .tint(model.isBlocking ? .red : .black)
-    .accessibilityIdentifier("brickNowButton")
-  }
-
   @ViewBuilder
   private var smallManualStop: some View {
     // Release builds must not offer a stop path that skips the NFC key.
@@ -321,26 +273,6 @@ private struct HomeView: View {
       .accessibilityIdentifier("manualStopHomeButton")
     }
     #endif
-  }
-
-  private var helperCopy: some View {
-    Text(helperText)
-      .font(.footnote)
-      .foregroundStyle(.secondary)
-      .multilineTextAlignment(.center)
-      .padding(.horizontal, 12)
-  }
-
-  private var helperText: String {
-    if !scanner.isAvailable {
-      return "NFC scanning is unavailable on this device."
-    }
-
-    if !model.hasSelection {
-      return "Pick apps or websites before Brick Now or NFC scan can start a block."
-    }
-
-    return "Paired NFC keys also start or stop blocking automatically."
   }
 
   private var durationText: String {

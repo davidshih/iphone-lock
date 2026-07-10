@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brick 首頁 UI Redesign 計畫</title>
+<style>
+  :root {
+    --bg: #0d0d0d; --card: #1a1a1a; --border: #2c2c2c;
+    --text: #f2f2f2; --muted: #9a9a9a;
+    --green: #34c759; --red: #ff453a; --done: #34c759;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+    line-height: 1.65; padding: 48px 20px 80px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 40px; }
+  h1 { font-size: 30px; }
+  header p { color: var(--muted); margin-top: 8px; }
+  .status-banner {
+    text-align: center; margin: 12px auto 0; padding: 8px 18px; border-radius: 99px;
+    display: inline-block; font-size: 13px; font-weight: 700;
+    background: rgba(255,159,10,.15); color: #ff9f0a;
+  }
+  h2 { font-size: 20px; margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; }
+  .card h3 { font-size: 16px; margin-bottom: 6px; }
+  .card p, li { color: var(--muted); font-size: 14px; }
+  ul { padding-left: 20px; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; background: #000; padding: 1px 6px; border-radius: 4px; color: #d0d0d0; }
+  .mock { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 16px; justify-content: center; }
+  .phone { flex: 1; min-width: 240px; max-width: 280px; border: 1px solid var(--border); border-radius: 28px; padding: 20px 16px 24px; background: #111; }
+  .phone .toprow { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+  .keychip { border: 1px solid var(--border); border-radius: 99px; padding: 3px 10px; font-size: 11px; }
+  .bigcircle {
+    width: 150px; height: 150px; border-radius: 50%; margin: 8px auto;
+    display: flex; align-items: center; justify-content: center; font-size: 56px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.4);
+  }
+  .bigcircle.green { background: var(--green); }
+  .bigcircle.red { background: var(--red); }
+  .phone .title { text-align: center; font-size: 17px; font-weight: 700; margin-top: 14px; }
+  .phone .sub { text-align: center; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .chiprow { display: flex; gap: 6px; margin-top: 16px; }
+  .chip { flex: 1; text-align: center; font-size: 12px; padding: 8px 0; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); }
+  .chip.on { background: var(--text); color: #000; font-weight: 700; border-color: var(--text); }
+  .footnote { text-align: center; font-size: 11px; color: var(--muted); margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-size: 12px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+  .tag.keep { background: rgba(52,199,89,.15); color: var(--green); }
+  .tag.kill { background: rgba(255,69,58,.15); color: var(--red); }
+  .tag.move { background: rgba(100,210,255,.15); color: #64d2ff; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 48px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🧱 首頁 UI Redesign 計畫</h1>
+  <p>一顆會變色的大按鈕就是整個 app：綠 = 開放（點了上鎖）、紅 = 鎖定（點了掃卡解鎖）。</p>
+  <div class="status-banner" style="background: rgba(52,199,89,.15); color: #34c759;">✅ 已完工並驗收 — 2026-07-09 · 測試 14/14 綠 · Release build 過 · 已裝機</div>
+</header>
+
+<h2>設計原則</h2>
+<div class="card">
+  <ul>
+    <li><b>顏色即狀態</b>：綠圓 = 未鎖、紅圓 = 已鎖。不用讀字就知道現在什麼狀態。</li>
+    <li><b>圓即按鈕</b>：點綠圓 → 立即上鎖（上鎖不需要卡，沒有理由多一步）；點紅圓 → 叫出 NFC 掃卡解鎖（解鎖必須有實體 key，這是產品本體）。</li>
+    <li><b>次要資訊降級</b>：配對 key 數量縮成小 chip、狀態訊息縮小、大按鈕以外不再有第二顆主要按鈕。</li>
+  </ul>
+</div>
+
+<h2>畫面對照</h2>
+<div class="mock">
+  <div class="phone">
+    <div class="toprow"><span>Brick</span><span class="keychip">🔑 1</span></div>
+    <div class="bigcircle green">🔓</div>
+    <div class="title">Ready</div>
+    <div class="sub">Tap to brick · Social Apps · 2h</div>
+    <div class="chiprow">
+      <div class="chip">30m</div><div class="chip">1h</div><div class="chip on">2h</div><div class="chip">4h</div>
+    </div>
+    <div class="chiprow">
+      <div class="chip">15m 後</div><div class="chip">30m 後</div><div class="chip">1h 後</div>
+    </div>
+    <div class="footnote">倒數上鎖排程 chips（未排程時）</div>
+  </div>
+  <div class="phone">
+    <div class="toprow"><span>Brick</span><span class="keychip">🔑 1</span></div>
+    <div class="bigcircle red">🔒</div>
+    <div class="title">Bricked</div>
+    <div class="sub">1h 47m left · Tap to scan your key</div>
+    <div class="footnote">鎖定時不顯示 duration/排程 chips，畫面只剩狀態＋解鎖入口</div>
+  </div>
+</div>
+
+<h2>元件處置清單</h2>
+<table>
+  <tr><th>現有元件</th><th>處置</th><th>說明</th></tr>
+  <tr><td>statusBadge（BRICKED/READY 膠囊）</td><td><span class="tag kill">砍</span></td><td>顏色已表達狀態，重複</td></tr>
+  <tr><td>lockMark（黑白圓＋鎖）</td><td><span class="tag keep">改</span></td><td>改綠/紅底、加狀態副標，維持可點（行為不變）</td></tr>
+  <tr><td>primaryAction（Brick Now / Scan to Unbrick 大按鈕）</td><td><span class="tag kill">砍</span></td><td>與大圓功能重複，砍掉後大圓是唯一主行動</td></tr>
+  <tr><td>pairedKeySummary（大卡片）</td><td><span class="tag move">降級</span></td><td>縮成 toolbar 左上小 chip（key icon＋數字），管理仍在 Settings</td></tr>
+  <tr><td>statusPanel（訊息面板）</td><td><span class="tag move">降級</span></td><td>縮成單行 footnote，只在有訊息時出現</td></tr>
+  <tr><td>durationPresetChips / scheduledLockSection</td><td><span class="tag keep">留</span></td><td>只在未鎖時顯示（現狀）</td></tr>
+  <tr><td>setupAction（Choose Apps）</td><td><span class="tag keep">留</span></td><td>未選 app 時仍是必要引導</td></tr>
+  <tr><td>smallManualStop（Debug）</td><td><span class="tag keep">留</span></td><td>DEBUG-only 不動</td></tr>
+  <tr><td>toolbar 掃描 icon</td><td><span class="tag keep">留</span></td><td>手動掃卡入口保留（配對前的首次掃卡需要）</td></tr>
+</table>
+
+<h2>實作細節（給 Sonnet）</h2>
+<div class="card">
+  <ul>
+    <li>只動 <code>Brick/ContentView.swift</code> 的 HomeView；model 層零改動。</li>
+    <li>大圓：<code>Circle().fill(model.isBlocking ? Color.red : Color.green)</code>，icon 白色 <code>lock.fill / lock.open.fill</code>，直徑 180pt；掃描中 overlay <code>ProgressView</code>。</li>
+    <li>副標邏輯：未鎖 = "Tap to brick · {targetName} · {duration}"；已鎖 = "{remaining} · Tap to scan your key"。</li>
+    <li>key chip 放 toolbar <code>topBarLeading</code>：<code>Label("\(count)", systemImage: "key.radiowaves.forward")</code> 小字，無配對 key 時顯示 "No key"。</li>
+    <li>statusMessage 改成單行 <code>footnote</code>，置底。</li>
+    <li>accessibility id 沿用 <code>lockMarkButton</code>；砍掉的 <code>brickNowButton</code> id 一併移除。</li>
+  </ul>
+</div>
+
+<h2>驗證</h2>
+<div class="card">
+  <ul>
+    <li>單元測試全綠（UI-only 改動，既有 14 個 test 不應受影響）。</li>
+    <li>Release build 成功。</li>
+    <li>實機安裝 iPhone12P：綠圓點擊 → 立即上鎖變紅；紅圓點擊 → NFC 面板 → 刷 EasyCard → 變綠。</li>
+  </ul>
+</div>
+
+<footer>Brick · ui-redesign-plan.html · 2026-07-09 · 驗收後更新狀態</footer>
+</div>
+</body>
+</html>
