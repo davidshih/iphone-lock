@@ -80,7 +80,7 @@ final class BlockSessionModelTests: XCTestCase {
 
     XCTAssertNil(model.pendingScannedKey)
     XCTAssertTrue(model.isBlocking)
-    XCTAssertEqual(model.statusMessage, "Unknown NFC key. Only an already-paired key can unbrick.")
+    XCTAssertEqual(model.statusMessage, "Unknown NFC key (intruder…). Only an already-paired key can unbrick.")
   }
 
   func testForgottenKeyBecomesPendingAgain() async {
@@ -145,6 +145,12 @@ final class BlockSessionModelTests: XCTestCase {
 
     XCTAssertNotNil(model.pendingScannedKey)
     XCTAssertFalse(model.isBlocking)
+  }
+
+  func testRandomUIDDetection() {
+    XCTAssertTrue(NFCFingerprint.isRandomUID([0x08, 0x01, 0x02, 0x03]))
+    XCTAssertFalse(NFCFingerprint.isRandomUID([0x04, 0x01, 0x02, 0x03]))
+    XCTAssertFalse(NFCFingerprint.isRandomUID([0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]))
   }
 
   private func makeModel(

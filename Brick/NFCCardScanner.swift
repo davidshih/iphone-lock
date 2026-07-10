@@ -95,6 +95,16 @@ final class NFCCardScanner: NSObject, ObservableObject, NFCTagReaderSessionDeleg
         return
       }
 
+      let bytes = NFCFingerprint.identifierBytes(from: tag)
+      if NFCFingerprint.isRandomUID(bytes) {
+        session.invalidate(errorMessage: "This card reports a random ID on every tap and can't be a Brick key. Use a card or NFC tag with a fixed ID.")
+        DispatchQueue.main.async {
+          self.isScanning = false
+          self.diagnosticLines.append("Tag rejected: random UID (\(bytes.count) bytes, first 0x08).")
+        }
+        return
+      }
+
       guard let scannedKey = NFCFingerprint.scannedKey(from: tag) else {
         session.invalidate(errorMessage: "This tag has no readable ID and can't be used as a Brick key.")
         DispatchQueue.main.async {
@@ -177,7 +187,12 @@ enum NFCFingerprint {
     }
   }
 
-  private static func identifierBytes(from tag: NFCTag) -> [UInt8] {
+  // ponytail: ISO 14443-3A 規範 4-byte UID 首 byte 0x08 = random ID（EMV 卡都是），每次 tap 換號，永遠配不回來
+  static func isRandomUID(_ bytes: [UInt8]) -> Bool {
+    bytes.count == 4 && bytes.first == 0x08
+  }
+
+  static func identifierBytes(from tag: NFCTag) -> [UInt8] {
     let bytes: [UInt8]
 
     switch tag {
